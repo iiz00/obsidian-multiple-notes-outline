@@ -196,6 +196,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.registerEvent(this.app.vault.on('rename',(file, oldPath)=>{
 			if (file instanceof TFile){
 				this.renamedFiles.push( {file, oldPath});
+				this.flagRegetTarget = true;
 				this.flagRenamed = true;
 				debouncerRequestRefresh.call(this);
 			}
@@ -220,7 +221,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	}
 
 	private async bootDelay(): Promise<void> {
-		return new Promise(resolve => { setTimeout(resolve, 200);});
+		return new Promise(resolve => { setTimeout(resolve, 2000);});
 	}
 
 	// ファイル修正、削除、リネームなどの際の自動更新
@@ -229,7 +230,7 @@ export class MultipleNotesOutlineView extends ItemView {
 			return;
 		}
 		
-		if (this.flagChanged){
+		if (this.flagChanged && !this.flagRegetTarget){
 			for (let i=0; i < this.changedFiles.length; i++){
 				let category: Category;
 				for (category in this.targetFiles){
@@ -252,29 +253,30 @@ export class MultipleNotesOutlineView extends ItemView {
 					constructOutlineDOM.call(this, this.targetFiles[category][index], this.fileInfo[category][index],this.outlineData[category][index], updateNoteChildrenEl, category);
 				}
 			}
-			this.changedFiles =[];
 		}
 
 		if (this.flagRenamed){
 			for (let i=0; i < this.renamedFiles.length; i++){
-				// viewに対象ファイルがあればアップデート
-				let category: Category;
-				for (category in this.targetFiles){
-					let index = this.targetFiles[category].findIndex( (targetfile)=> targetfile.path == this.renamedFiles[i].oldPath);  // TFileかpathにあわせて比較する必要
-					if (index<0){
-						continue;
-					}
 
-					//変更したファイルのファイル情報とアウトラインを更新
-					this.targetFiles[category][index] = this.renamedFiles[i].file;
-					this.fileInfo[category][index] = await getFileInfo(this.app, this.targetFiles[category][index], this.settings);
-					const newData = await getOutline(this.app, this.targetFiles[category][index],this.fileStatus[category][index], this.fileInfo[category][index], this.settings);
-					if (newData){
-						this.outlineData[category][index] = newData; 
-						this.fileStatus[category][index].outlineReady = true;
-					}
+				// 暫定的にrename時はリロードする処理に変更
+				// viewに対象ファイルがあればアップデート
+				// let category: Category;
+				// for (category in this.targetFiles){
+				// 	let index = this.targetFiles[category].findIndex( (targetfile)=> targetfile.path == this.renamedFiles[i].oldPath);  // TFileかpathにあわせて比較する必要
+				// 	if (index<0){
+				// 		continue;
+				// 	}
+
+				// 	//変更したファイルのファイル情報とアウトラインを更新
+				// 	this.targetFiles[category][index] = this.renamedFiles[i].file;
+				// 	this.fileInfo[category][index] = await getFileInfo(this.app, this.targetFiles[category][index], this.settings);
+				// 	const newData = await getOutline(this.app, this.targetFiles[category][index],this.fileStatus[category][index], this.fileInfo[category][index], this.settings);
+				// 	if (newData){
+				// 		this.outlineData[category][index] = newData; 
+				// 		this.fileStatus[category][index].outlineReady = true;
+				// 	}
 					
-				}
+				// }
 
 				// relatedFilesをアップデート
 				for (let srcFilePath in this.settings.relatedFiles){
@@ -293,11 +295,12 @@ export class MultipleNotesOutlineView extends ItemView {
 				}
 			}
 			await this.plugin.saveSettings();
-			this.renamedFiles =[];
 		}
 		if (this.flagRegetTarget){
 			this.refreshView(this.flagRegetTarget, this.flagRegetTarget);
 		}
+		this.changedFiles = [];
+		this.renamedFiles = [];
 		this.flagRegetTarget = false;
 		this.flagChanged = false;
 		this.flagRenamed = false;

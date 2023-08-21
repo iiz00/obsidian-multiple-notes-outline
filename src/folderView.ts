@@ -165,7 +165,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	}	
 		
 	private async bootDelay(): Promise<void> {
-		return new Promise(resolve => { setTimeout(resolve, 200);});
+		return new Promise(resolve => { setTimeout(resolve, 2100);});
 	}
 
 	// ファイル修正、削除、リネームなどの際の自動更新
@@ -173,7 +173,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		if (!(this.flagChanged || this.flagRegetTarget || this.flagRenamed)){
 			return;
 		}
-		if (this.flagChanged){
+		if (this.flagChanged && !this.flagRegetTarget){
 			for (let i=0; i < this.changedFiles.length; i++){
 				for (const folder in this.targetFiles){
 					let index = this.targetFiles[folder].indexOf(this.changedFiles[i]);
@@ -195,7 +195,6 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 					constructOutlineDOM.call(this, this.targetFiles[folder][index], this.fileInfo[folder][index], this.outlineData[folder][index], updateNoteChildrenEl, 'folder');
 				}
 			}
-			this.changedFiles =[];
 		}
 
 		if (this.flagRenamed){
@@ -218,11 +217,12 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 				}
 			}
 			await this.plugin.saveSettings();
-			this.renamedFiles =[];
 		}
 		if (this.flagRegetTarget){
 			this.refreshView(this.flagRegetTarget, this.flagRegetTarget);
 		}
+		this.changedFiles = [];
+		this.renamedFiles = [];
 		this.flagRegetTarget = false;
 		this.flagChanged = false;
 		this.flagRenamed = false;
