@@ -5,7 +5,6 @@ import { getBacklinkFiles, getBacklinkFilesDataview } from 'src/getTargetFiles';
 // ファイルステータスの初期化
 export function initFileStatus(files: TAbstractFile[]): FileStatus[] {
     let status:FileStatus[] = [];
-    console.log('initStatus',files);
     for (let i=0; i< files.length; i++) {
         const flagFolder = Boolean(files[i] instanceof TFolder);
         status.push({

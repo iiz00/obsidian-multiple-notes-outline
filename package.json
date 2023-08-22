@@ -1,6 +1,6 @@
 {
 	"name": "multiple-notes-outline",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Add custom views which shows outline of multiple notes at once",
 	"main": "main.js",
 	"scripts": {
