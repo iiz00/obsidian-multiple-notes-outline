@@ -80,7 +80,7 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
-- 0.1.2
+- 0.1.3
 	- Fixed file view not working properly when backlinks are hidden.
 - 0.1.1
 	- Fixed
