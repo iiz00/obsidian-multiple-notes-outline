@@ -385,7 +385,8 @@ export class MultipleNotesOutlineView extends ItemView {
 			}
 
 			if ((this.filecount < this.settings.readLimit || status[i].isTop ) && !Object.values(status[i].duplicated).includes(true)){
-				const info = await getFileInfo(this.app, files[i], this.settings);
+				// files.length ==1 の場合、メインターゲットファイルを対象にしている可能性があるため、必ずbacklink filesを取得する。
+				const info = await getFileInfo(this.app, files[i], this.settings, Boolean( files.length == 1));
 				fileInfo.push(info);
 				const data = await getOutline(this.app, files[i], status[i], info, this.settings);
 				if (data){
