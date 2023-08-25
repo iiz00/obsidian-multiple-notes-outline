@@ -235,7 +235,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	async refreshView(flagGetTarget:boolean, flagGetOutline:boolean){
 		
 		// 描画所要時間を測定
-		const startTime = performance.now();
+		// const startTime = performance.now();
 		
 		// ファイル名背景色を再設定
 		changeNoteTitleBackgroundColor(this.plugin.settings);
@@ -254,20 +254,20 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			}
 		}
 
-		const midTime = performance.now();
-		if (this.settings.showDebugInfo){
-			console.log ('time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
-		}
+		// const midTime = performance.now();
+		// if (this.settings.showDebugInfo){
+		// 	console.log ('time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
+		// }
 
 		drawUIFolderView.call(this);
 		this.drawOutline(previousY);
 
 		// 描画所要時間を測定
-		const endTime = performance.now();
-		if (this.settings.showDebugInfo){
-			console.log ('time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
-			console.log ('time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
-		}
+		// const endTime = performance.now();
+		// if (this.settings.showDebugInfo){
+		// 	console.log ('time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
+		// 	console.log ('time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
+		// }
 	}
 
 	// フォルダ内ファイルを処理（ファイル取得、ステータス初期化、情報、アウトライン取得）
