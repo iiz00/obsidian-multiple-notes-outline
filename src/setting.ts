@@ -14,12 +14,6 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-
-        this.containerEl.createEl("h4", {
-            text: "Basics",
-            cls: 'setting-category'
-        });
-
         new Setting(containerEl)
             .setName("Show headings")
             .addToggle((toggle) => {
@@ -1269,18 +1263,18 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
         });
 
 
-        new Setting(containerEl)
-                .setName("show debug information")
-                .setDesc("display debug information in the console")
-                .addToggle((toggle) => {
-                    toggle
-                        .setValue(this.plugin.settings.showDebugInfo)
-                        .onChange(async (value) => {
-                            this.plugin.settings.showDebugInfo = value;
-                            this.display();
-                            await this.plugin.saveSettings();
-                        })
-                });
+        // new Setting(containerEl)
+        //         .setName("show debug information")
+        //         .setDesc("display debug information in the console")
+        //         .addToggle((toggle) => {
+        //             toggle
+        //                 .setValue(this.plugin.settings.showDebugInfo)
+        //                 .onChange(async (value) => {
+        //                     this.plugin.settings.showDebugInfo = value;
+        //                     this.display();
+        //                     await this.plugin.saveSettings();
+        //                 })
+        //         });
 
     }
 

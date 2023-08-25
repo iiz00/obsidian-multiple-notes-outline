@@ -313,7 +313,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	async refreshView(flagGetTarget:boolean, flagGetOutline:boolean){
 		
 		// 描画所要時間を測定
-		const startTime = performance.now();
+		// const startTime = performance.now();
 		
 		// ファイル名背景色を再設定
 		changeNoteTitleBackgroundColor(this.plugin.settings);
@@ -357,21 +357,21 @@ export class MultipleNotesOutlineView extends ItemView {
 			sortFileOrder(this.fileOrder.backlink, this.targetFiles.backlink, this.fileStatus.backlink, this.fileInfo.backlink, this.settings);
 		}
 
-		const midTime = performance.now();
-		if (this.settings.showDebugInfo){
-			console.log ('time required to get outlines, file view: ',this.targetFiles.main[0], midTime - startTime);
-		}
+		// const midTime = performance.now();
+		// if (this.settings.showDebugInfo){
+		// 	console.log ('time required to get outlines, file view: ',this.targetFiles.main[0], midTime - startTime);
+		// }
 
 		drawUI.call(this);
 		this.drawOutline(previousY);
 
 		// 描画所要時間を測定
-		const endTime = performance.now();
-		if (this.settings.showDebugInfo){
-			console.log ('time required to draw outlines, file view: ',this.targetFiles.main[0], endTime - midTime, previousY);
+		// const endTime = performance.now();
+		// if (this.settings.showDebugInfo){
+		// 	console.log ('time required to draw outlines, file view: ',this.targetFiles.main[0], endTime - midTime, previousY);
 
-			console.log ('time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
-		}
+		// 	console.log ('time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
+		// }
 	}
 
 	//ファイル情報、アウトライン情報を作成・取得

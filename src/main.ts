@@ -345,7 +345,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 		//コマンド追加
 		// Open Outline: アウトライン表示用のカスタムビューを開く
 		this.addCommand({
-			id: 'multiple-notes-outline-open-file-view',
+			id: 'open-file-view',
 			name: 'Open File View',
 
 			callback: async ()=> {
@@ -353,7 +353,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 			}
 		});
 		this.addCommand({
-			id: 'multiple-notes-outline-open-folder-view',
+			id: 'open-folder-view',
 			name: 'Open Folder View',
 
 			callback: async ()=> {
@@ -362,11 +362,12 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 		});
 	
 	// viewの更新(アップデート時用)
-	if (this.app.workspace.layoutReady){
-		this.checkAllView();		
-	} else {
-		this.registerEvent(this.app.workspace.on('layout-ready', this.checkAllView));
-	}
+	// if (this.app.workspace.layoutReady){
+	// 	this.checkAllView();		
+	// } else {
+	// 	this.registerEvent(this.app.workspace.on('layout-ready', this.checkAllView));
+	// }
+	this.app.workspace.onLayoutReady(this.checkAllView);
 
 	// This adds a settings tab so the user can configure various aspects of the plugin
 	this.addSettingTab(new MultipleNotesOutlineSettingTab(this.app, this));
@@ -374,9 +375,6 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 	}
 
 	onunload() {
-		// Developer Docsに従ってカスタムビューをデタッチ
-		this.app.workspace.detachLeavesOfType(MultipleNotesOutlineViewType);
-		this.app.workspace.detachLeavesOfType(MultipleNotesOutlineFolderViewType);
 
 	}
 
