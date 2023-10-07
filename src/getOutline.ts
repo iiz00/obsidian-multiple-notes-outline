@@ -37,7 +37,8 @@ export async function getFileInfo(app: App, file: TFile, settings:MultipleNotesO
     const info:FileInfo = {
         lines: lines,
         numOfLines: lines.length,
-        backlinks: backlinkFiles
+        backlinks: backlinkFiles,
+        frontmatterLinks: undefined
     }
 
 
@@ -54,6 +55,8 @@ export async function getOutline (app: App, file: TFile, status:FileStatus, info
     if (!cache){
         return null;
     }
+    // properties(frontmatter)からリンクを取得
+    info.frontmatterLinks = cache?.frontmatterLinks;
     
     // headings,links,tags を抽出
 

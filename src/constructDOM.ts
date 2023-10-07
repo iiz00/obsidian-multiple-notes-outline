@@ -1,9 +1,9 @@
-import { TFile, setIcon, Menu, MarkdownView, App, TAbstractFile, TFolder } from 'obsidian';
+import { TFile, setIcon, Menu, MarkdownView, App, TAbstractFile, TFolder, setTooltip } from 'obsidian';
 
 import { OutlineData, FileInfo, FileStatus } from 'src/main';
 import { MultipleNotesOutlineViewType, Category } from './fileView';
 import { getFileInfo, getOutline } from 'src/getOutline';
-import { addFlag, changeNoteTitleBackgroundColor, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag } from 'src/util';
+import { addFlag, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag } from 'src/util';
 
 
 export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], info: FileInfo[], data:OutlineData[][], 
@@ -155,7 +155,20 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 					},
 					false
 				);
+
+				//hover preview 
+				noteTitleEl.addEventListener('mouseover', (event: MouseEvent) => {
+					this.app.workspace.trigger('hover-link', {
+						event,
+						source: MultipleNotesOutlineViewType,
+						hoverParent: parentEl,   // rootEl→parentElにした
+						targetEl: noteTitleEl,
+						linktext: files[si].path,
+					});
+				});
+			
 			}
+
 			
 			// コンテキストメニュー
 			noteTitleEl.addEventListener(
@@ -244,17 +257,22 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 				constructOutlineDOM.call(this, files[si], info[si], data[si], noteChildrenEl, category);
 			}
 			
-
 			// 折りたたまれていれば子要素を非表示にする
+			// 折りたたまれているのは以下のケース
+			// collpaseAllが有効な場合、
+			// ファイルビューで各カテゴリ（メイン/アウトゴーイング/自カテゴリ）に重複がある場合、
+			// relatedFilesで折りたたみフラグが立っている場合
 			if ((this.collapseAll) ||
 				(status[si].duplicated.main && this.settings.showFiles.main) ||
 				(status[si].duplicated.outgoing && this.settings.showFiles.outgoing) ||
 				(status[si].duplicated.self) ||
-				(this.settings.relatedFiles?.[srcFile.path]?.[files[si].path]?.fold) && !parentEl.classList.contains("mod-root")) {
+				(this.settings.relatedFiles?.[srcFile.path]?.[files[si].path]?.fold)) {
 					noteEl.classList.add('is-collapsed');
 					noteCollapseIcon.classList.add('is-collapsed');
 					status[si].isFolded = true;
 					noteChildrenEl.style.display = 'none';
+			} else {
+				status[si].isFolded = false;
 			}
 		}
 }
@@ -277,6 +295,159 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 	// extract マッチする項目があったかどうか filter関連コメントアウト
 	// let isExtracted = false;
 
+	// propertiesの処理
+	if (this.settings.showPropertyLinks && info.frontmatterLinks){
+		frontmatterlinksloop: for (let j = 0; j < info.frontmatterLinks.length; j++){
+		
+			const linkTarget = this.app.metadataCache.getFirstLinkpathDest(info.frontmatterLinks[j].link, file.path);
+			if (!(linkTarget instanceof TFile)) {
+				continue;
+			}
+			// 抽出 extract  filter関連コメントアウト
+			// if (this.extractMode == true) {
+			// 	if (this.extractTask == true || !info[i].frontmatterLinks[j].displayText.toLowerCase().includes(this.settings.wordsToExtract.toLowerCase())){
+			// 		continue;
+			// 	} else {
+			// 		isExtracted = true;
+			// 	}
+			// }
+
+			// hideLinksBetweenRelatedFilesの設定に従って重複除外
+			if (this.settings.hideLinksBetweenRelatedFiles == 'mainOnly'){
+				if (category == 'main'){
+					continue;
+				}
+				if (linkTarget.path == this.targetFiles.main?.[0].path){
+					continue;
+				}
+			}
+			if (this.settings.hideLinksBetweenRelatedFiles == 'toMainOnly'){
+				if (linkTarget.path == this.targetFiles.main?.[0].path){
+					continue;
+				}
+			}
+			if (this.settings.hideLinksBetweenRelatedFiles == 'all'){
+				for (let category in this.targetFiles){
+					// info.frontmatterLinks[j].linkに一致するファイル名があるかどうかの処理。
+					if (this.targetFiles[category].some( (targetfile) => targetfile.path == linkTarget.path)){
+						continue frontmatterlinksloop;
+					}
+				}
+			}
+
+
+
+			const outlineEl: HTMLElement = parentEl.createDiv("tree-item nav-file");
+			const outlineTitle: HTMLElement = outlineEl.createDiv("tree-item-self is-clickable nav-file-title");
+			setIcon(outlineTitle,'link');
+	
+			outlineTitle.style.paddingLeft ='0.5em';
+			outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(info.frontmatterLinks[j].displayText);
+	
+		
+			//クリック時
+			outlineTitle.addEventListener(
+				"click",
+				// async(event: MouseEvent) => {
+				//     event.preventDefault();
+				//     // if (file != this.activeFile){
+				//     //     this.holdUpdateOnce = true;
+				//     // }
+				//     await this.app.workspace.getLeaf().openFile(info[i].backlinks[j]);
+				//     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+				// },
+				(event: MouseEvent) => {
+					event.preventDefault();
+					this.app.workspace.getLeaf().openFile(file);
+				},
+				false
+			);
+			//hover preview 
+			outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
+				this.app.workspace.trigger('hover-link', {
+					event,
+					source: MultipleNotesOutlineViewType,
+					hoverParent: parentEl,   // rootEl→parentElにした
+					targetEl: outlineTitle,
+					linktext: file.path,
+				});
+			});
+
+			// contextmenu
+			outlineTitle.addEventListener(
+				"contextmenu",
+				(event: MouseEvent) => {
+					const menu = new Menu();
+
+					//抽出 filter関連コメントアウト
+					// menu.addItem((item) =>
+					// 	item
+					// 		.setTitle("Extract")
+					// 		.setIcon("search")
+					// 		.onClick(async ()=>{
+					// 			this.plugin.settings.wordsToExtract = data[j].displayText;
+					// 			await this.plugin.saveSettings();
+					// 			this.extractMode = true;
+					// 			this.extractTask = false;
+					// 			this.refreshView(false,false);
+					// 		})
+					// );
+					// menu.addSeparator();
+
+
+					menu.addItem((item)=>
+						item
+							.setTitle("Open linked file")
+							.setIcon("links-going-out")
+							.onClick(async()=>{
+								this.app.workspace.getLeaf().openFile(linkTarget);
+							})
+					);
+					menu.addSeparator();
+
+
+					//新規タブに開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open in new tab")
+							.setIcon("file-plus")
+							.onClick(async()=> {
+								if (file != this.activeFile){
+									this.holdUpdateOnce = true;
+								}
+								await this.app.workspace.getLeaf('tab').openFile(file);
+							})
+					);
+					//右に開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open to the right")
+							.setIcon("separator-vertical")
+							.onClick(async()=> {
+								if (file != this.activeFile){
+									this.holdUpdateOnce = true;
+								}
+								await this.app.workspace.getLeaf('split').openFile(file);
+							})
+					);
+					//新規ウィンドウに開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open in new window")
+							.setIcon("box-select")
+							.onClick(async()=> {
+								if (file != this.activeFile){
+									this.holdUpdateOnce = true;
+								}
+								await this.app.workspace.getLeaf('window').openFile(file);
+							})
+					);
+
+					menu.showAtMouseEvent(event);
+				}
+			);
+		}
+	}
 
 	// 最新の見出しレベル
 	let latestHeadingLevel = 0;
@@ -378,27 +549,51 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 			// links
 			if (element == 'link'){
 				// mainは設定次第でリンクは非表示（アウトゴーイングファイル群で代替できるので）
-				if (this.settings.hideLinksBetweenRelatedFiles != 'none'){
+				// if (this.settings.hideLinksBetweenRelatedFiles != 'none'){
+				// 	if (category == 'main'){
+				// 		continue;
+				// 	}
+				// 	if (this.settings.hideLinksBetweenRelatedFiles == 'mainOnly'){
+
+				// 		if (category == 'backlink' && app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path == this.targetFiles.main[0].path){
+				// 			continue;
+				// 		}
+				// 	} else {
+				// 		// hideLinksBetweenrelatedFiles == 'all'
+				// 		const linktargetpath = app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path;
+				// 		if (linktargetpath){
+				// 			for (let category in this.targetFiles){
+				// 				// data[j].linkに一致するファイル名があるかどうかの処理。
+				// 				if (this.targetFiles[category].some( (targetfile) => targetfile.path == linktargetpath)){
+				// 					continue elementloop;
+				// 				}
+				// 			}
+				// 		}
+						
+				// 	}
+				// }
+				if (this.settings.hideLinksBetweenRelatedFiles == 'mainOnly'){
 					if (category == 'main'){
 						continue;
 					}
-					if (this.settings.hideLinksBetweenRelatedFiles == 'mainOnly'){
-
-						if (category == 'backlink' && app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path == this.targetFiles.main[0].path){
-							continue;
-						}
-					} else {
-						// hideLinksBetweenrelatedFiles == 'all'
-						const linktargetpath = app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path;
-						if (linktargetpath){
-							for (let category in this.targetFiles){
-								// data[j].linkに一致するファイル名があるかどうかの処理。
-								if (this.targetFiles[category].some( (targetfile) => targetfile.path == linktargetpath)){
-									continue elementloop;
-								}
+					if (this.app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path == this.targetFiles.main?.[0].path){
+						continue;
+					}
+				}
+				if (this.settings.hideLinksBetweenRelatedFiles == 'toMainOnly'){
+					if (this.app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path == this.targetFiles.main?.[0].path){
+						continue;
+					}
+				}
+				if (this.settings.hideLinksBetweenRelatedFiles == 'all'){
+					const linkTargetPath = this.app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path;
+					if (linkTargetPath){
+						for (let category in this.targetFiles){
+							// data[j].linkに一致するファイル名があるかどうかの処理。
+							if (this.targetFiles[category].some( (targetfile) => targetfile.path == linkTargetPath)){
+								continue elementloop;
 							}
 						}
-						
 					}
 				}
 			}
@@ -557,10 +752,12 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 				}
 				// 空行を除去
 				previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
-				outlineTitle.ariaLabel = previewText2;
+				setTooltip(outlineTitle, previewText2, {classes:['daily-note-preview']});
+
+				// outlineTitle.ariaLabel = previewText2;
 				outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
-				outlineTitle.setAttribute('aria-label-delay','10');
-				outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
+				outlineTitle.setAttribute('data-tooltip-delay','10');
+				// outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
 			}
 			
 			//クリック時

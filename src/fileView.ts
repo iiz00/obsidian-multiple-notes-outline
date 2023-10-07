@@ -7,7 +7,7 @@ import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings, OutlineData, 
 
 import { getBacklinkFiles, getOutgoingLinkFiles } from 'src/getTargetFiles';
 import { initFileStatus, getFileInfo, getOutline } from 'src/getOutline'
-import { addFlag, changeNoteTitleBackgroundColor, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag, sortFileOrder } from 'src/util';
+import { addFlag, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag, sortFileOrder, getTheme, setNoteTitleBackgroundColor } from 'src/util';
 
 import { drawUI } from 'src/drawUI';
 import { constructNoteDOM, constructOutlineDOM } from 'src/constructDOM';
@@ -109,6 +109,9 @@ export class MultipleNotesOutlineView extends ItemView {
 	// viewタイプ DOMのidに付加
 	viewType: string = 'MNOfileview';
 
+	// 現在のライトモード/ダークモードの状態
+	theme: 'light' | 'dark';
+
 	constructor(
 		leaf: WorkspaceLeaf,
 		plugin: MultipleNotesOutlinePlugin,
@@ -201,6 +204,16 @@ export class MultipleNotesOutlineView extends ItemView {
 				debouncerRequestRefresh.call(this);
 			}
 		}));
+
+		this.registerEvent(this.app.workspace.on('css-change', (e)=>{
+			
+			const newTheme = getTheme();
+			if (newTheme !== this.theme){
+				this.theme = newTheme;
+				setNoteTitleBackgroundColor(this.theme, this.settings);
+			}
+
+		}));
 	}
 
 	async onClose(){
@@ -211,17 +224,21 @@ export class MultipleNotesOutlineView extends ItemView {
 		await this.bootDelay(); //起動直後に少しウエイト（DNOの時はこれがないとデータ取得に失敗していた）
 		this.collapseAll = this.settings.collapseAllAtStartup;
 
+		// ノートタイトル背景色の設定
+		this.theme = getTheme();
+		setNoteTitleBackgroundColor(this.theme, this.settings);
+
 		this.activeFile = this.app.workspace.getActiveFile();
 		if (this.activeFile){
 			this.targetFiles.main[0]= this.activeFile;
 			this.refreshView(true, true);
 		} else {
-			console.log("failed to get active file");
+			console.log("Multiple Notes Outline: failed to get active file");
 		}
 	}
 
 	private async bootDelay(): Promise<void> {
-		return new Promise(resolve => { setTimeout(resolve, 2000);});
+		return new Promise(resolve => { setTimeout(resolve, 500);});
 	}
 
 	// ファイル修正、削除、リネームなどの際の自動更新
@@ -313,10 +330,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	async refreshView(flagGetTarget:boolean, flagGetOutline:boolean){
 		
 		// 描画所要時間を測定
-		// const startTime = performance.now();
-		
-		// ファイル名背景色を再設定
-		changeNoteTitleBackgroundColor(this.plugin.settings);
+		const startTime = performance.now();
 
 		// スクロール位置の取得
 		const containerEl = document.getElementById('MNOfileview-listcontainer');
@@ -332,7 +346,7 @@ export class MultipleNotesOutlineView extends ItemView {
 			[this.fileStatus.main, this.fileInfo.main,this.outlineData.main] = await this.getOutlines(this.targetFiles.main, this.fileStatus.main);
 
 			// 現ファイル情報をもとにアウトゴーイングリンク/バックリンク先のファイルを取得
-			this.targetFiles.outgoing = getOutgoingLinkFiles(this.app, this.targetFiles.main[0], this.outlineData.main[0]);
+			this.targetFiles.outgoing = getOutgoingLinkFiles(this.app, this.targetFiles.main[0], this.fileInfo.main[0], this.outlineData.main[0]);
 			this.fileStatus.outgoing = initFileStatus(this.targetFiles.outgoing);
 			this.fileOrder.outgoing = [...Array(this.targetFiles.outgoing.length)].map((_, i) => i);
 
@@ -357,21 +371,21 @@ export class MultipleNotesOutlineView extends ItemView {
 			sortFileOrder(this.fileOrder.backlink, this.targetFiles.backlink, this.fileStatus.backlink, this.fileInfo.backlink, this.settings);
 		}
 
-		// const midTime = performance.now();
-		// if (this.settings.showDebugInfo){
-		// 	console.log ('time required to get outlines, file view: ',this.targetFiles.main[0], midTime - startTime);
-		// }
+		const midTime = performance.now();
+		if (this.settings.showDebugInfo){
+		 	console.log('Multiple Notes Outline: time required to get outlines, file view: ',this.targetFiles.main[0], midTime - startTime);
+		}
 
 		drawUI.call(this);
 		this.drawOutline(previousY);
 
 		// 描画所要時間を測定
-		// const endTime = performance.now();
-		// if (this.settings.showDebugInfo){
-		// 	console.log ('time required to draw outlines, file view: ',this.targetFiles.main[0], endTime - midTime, previousY);
+		const endTime = performance.now();
+		if (this.settings.showDebugInfo){
+		 	console.log('Multiple Notes Outline: time required to draw outlines, file view: ',this.targetFiles.main[0], endTime - midTime, previousY);
 
-		// 	console.log ('time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
-		// }
+		 	console.log('Multiple Notes Outline: time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
+		}
 	}
 
 	//ファイル情報、アウトライン情報を作成・取得

@@ -4,8 +4,6 @@ import MultipleNotesOutlinePlugin from "./main";
 
 import { setIcon, TFile, Menu } from 'obsidian';
 
-import { ModalExtract } from 'src/modalExtract'
-
 // 操作アイコン部分を描画
 export function drawUI(): void {
 
@@ -288,6 +286,34 @@ function uiToggleHeading (parentEl:HTMLElement):void{
             this.refreshView(false,false);
         }
     );
+    navActionButton.addEventListener(
+        "contextmenu",
+        (event: MouseEvent) => {
+            const menu = new Menu();
+            menu.addItem( (item)=>
+                item.setTitle('heading level to display'));
+            
+            for (let i = 0; i<6; i++){
+                const dispText = (i == 0)? "H1": "H1 - H"+(i+1).toString();
+                menu.addItem((item)=>
+                    item
+                        .setTitle(dispText)
+                        .onClick(async()=>{
+                            for(let j =0; j<6; j++){
+                                if (j <= i){
+                                    this.settings.headingLevel[j] = true;
+                                } else {
+                                    this.settings.headingLevel[j] = false;
+                                }
+                            }
+                            await this.plugin.saveSettings();
+                            this.refreshView(false,false);
+                        })
+                ) 
+            }
+            menu.showAtMouseEvent(event);
+        }
+    )
 }
 
 function uiToggleLink (parentEl:HTMLElement):void{
