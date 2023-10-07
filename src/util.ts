@@ -42,10 +42,14 @@ export function toggleFlag(srcFile:TAbstractFile, dstFile:TAbstractFile, flag: '
     }
 }
 
+// テーマ（ライト/ダーク）を取得
+export function getTheme():'light'|'dark' {
+    const theme = (app.vault.config?.theme === 'moonstone')? 'light':'dark';
+    return theme;
+}
 
-// ファイルタイトルの背景色を指定（css変数を設定値に基づいて変更）  ※ファイルエクスプローラのフォルダの背景色に相当
-export function changeNoteTitleBackgroundColor(settings: MultipleNotesOutlineSettings){
-    const theme = document.getElementsByTagName('body')[0].classList.contains('theme-light') ? 'light' : 'dark';
+// ファイルタイトルの背景色を指定ver2（css変数を設定値に基づいて変更）  ※ファイルエクスプローラのフォルダの背景色に相当
+export function setNoteTitleBackgroundColor(theme: 'light'|'dark', settings: MultipleNotesOutlineSettings){
     switch(settings.noteTitleBackgroundColor){
         case 'none':
             break;
@@ -59,6 +63,23 @@ export function changeNoteTitleBackgroundColor(settings: MultipleNotesOutlineSet
             break;
         }
 }
+
+// ファイルタイトルの背景色を指定（css変数を設定値に基づいて変更）  ※ファイルエクスプローラのフォルダの背景色に相当
+// export function changeNoteTitleBackgroundColor(settings: MultipleNotesOutlineSettings){
+//     const theme = document.getElementsByTagName('body')[0].classList.contains('theme-light') ? 'light' : 'dark';
+//     switch(settings.noteTitleBackgroundColor){
+//         case 'none':
+//             break;
+//         case 'custom':
+//             document.getElementsByTagName('body')[0].style.setProperty("--MNO-filetitle-background", settings.customNoteTitleBackgroundColor[theme]);
+// 			document.getElementsByTagName('body')[0].style.setProperty("--MNO-filetitle-background-hover", settings.customNoteTitleBackgroundColorHover[theme]);
+//             break;
+//         default:
+//             document.getElementsByTagName('body')[0].style.setProperty("--MNO-filetitle-background", FILE_TITLE_BACKGROUND_COLOR[settings.noteTitleBackgroundColor][theme]);
+// 			document.getElementsByTagName('body')[0].style.setProperty("--MNO-filetitle-background-hover", FILE_TITLE_BACKGROUND_COLOR_HOVER[settings.noteTitleBackgroundColor][theme]);
+//             break;
+//         }
+// }
 
 
 // ファイル順ソート

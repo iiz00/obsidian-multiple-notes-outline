@@ -5,10 +5,9 @@ import { ItemView, WorkspaceLeaf, TFile, TAbstractFile} from 'obsidian'
 
 import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings, OutlineData, FileInfo, FileStatus } from 'src/main';
 
-import { ModalExtract } from 'src/modalExtract'
 import { getBacklinkFiles, getOutgoingLinkFiles } from 'src/getTargetFiles';
 import { initFileStatus, getFileInfo, getOutline } from 'src/getOutline'
-import { addFlag, changeNoteTitleBackgroundColor, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag, sortFileOrder } from 'src/util';
+import { addFlag, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag, sortFileOrder, getTheme, setNoteTitleBackgroundColor } from 'src/util';
 
 import { drawUI, drawUIFolderView } from 'src/drawUI';
 import { constructNoteDOM, constructOutlineDOM } from 'src/constructDOM';
@@ -74,6 +73,9 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	// viewタイプ DOMのidに付加
 	viewType: string = 'MNOfolderview';
+
+	// 現在のライトモード/ダークモードの状態
+	theme: 'light' | 'dark';
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -141,6 +143,16 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			this.flagRenamed = true;
 			debouncerRequestRefresh.call(this);
 		}));
+
+		this.registerEvent(this.app.workspace.on('css-change', (e)=>{
+			
+			const newTheme = getTheme();
+			if (newTheme !== this.theme){
+				this.theme = newTheme;
+				setNoteTitleBackgroundColor(this.theme, this.settings);
+			}
+
+		}));
 	}
 
 	async onClose(){
@@ -150,6 +162,10 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	private async initView() {
 		await this.bootDelay(); //起動直後に少しウエイト（DNOの時はこれがないとデータ取得に失敗していた）
 		this.collapseAll = this.settings.collapseAllAtStartup;
+
+		// ノートタイトル背景色の設定
+		this.theme = getTheme();
+		setNoteTitleBackgroundColor(this.theme, this.settings);
 		
 		if (this.targetFolder){
 			this.refreshView(true, true);
@@ -159,13 +175,13 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 				this.targetFolder = this.activeFile.parent;
 				this.refreshView(true,true);
 			} else {
-			console.log("failed to get active file");
+			console.log("Multiple Notes Outline: failed to get active file");
 			}
 		}
 	}	
 		
 	private async bootDelay(): Promise<void> {
-		return new Promise(resolve => { setTimeout(resolve, 2100);});
+		return new Promise(resolve => { setTimeout(resolve, 600);});
 	}
 
 	// ファイル修正、削除、リネームなどの際の自動更新
@@ -235,10 +251,8 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	async refreshView(flagGetTarget:boolean, flagGetOutline:boolean){
 		
 		// 描画所要時間を測定
-		// const startTime = performance.now();
-		
-		// ファイル名背景色を再設定
-		changeNoteTitleBackgroundColor(this.plugin.settings);
+		const startTime = performance.now();
+
 
 		// スクロール位置の取得
 		const containerEl = document.getElementById('MNOfolderview-listcontainer');
@@ -254,20 +268,20 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			}
 		}
 
-		// const midTime = performance.now();
-		// if (this.settings.showDebugInfo){
-		// 	console.log ('time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
-		// }
+		const midTime = performance.now();
+		if (this.settings.showDebugInfo){
+		 	console.log ('Multiple Notes Outline: time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
+		}
 
 		drawUIFolderView.call(this);
 		this.drawOutline(previousY);
 
 		// 描画所要時間を測定
-		// const endTime = performance.now();
-		// if (this.settings.showDebugInfo){
-		// 	console.log ('time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
-		// 	console.log ('time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
-		// }
+		const endTime = performance.now();
+		if (this.settings.showDebugInfo){
+		 	console.log ('Multiple Notes Outline: time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
+		 	console.log ('Multiple Notes Outline: time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
+		}
 	}
 
 	// フォルダ内ファイルを処理（ファイル取得、ステータス初期化、情報、アウトライン取得）

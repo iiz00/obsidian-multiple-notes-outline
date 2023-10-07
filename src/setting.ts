@@ -317,12 +317,13 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
         });
 
         new Setting(containerEl)
-            .setName("Hide links between related files")
-            .setDesc("main only: hide links from the main file to outgoing files and links from backlink files to the main file. all: hide links between main/outgoing/backlink files.")
+            .setName("Hide link elements between displayed files")
+            .setDesc("main file only: hide links between the main file and other displayed. other files to main file only: hide links from other displayed files to the main file. all: hide links between all displayed files.")
             .addDropdown((dropdown) => {
                 dropdown
                     .addOption("none", "none")
-                    .addOption("mainOnly","main only")
+                    .addOption("mainOnly","main file only")
+                    .addOption("toMainOnly","other files to main file only")
                     .addOption("all","all")
                     .setValue(this.plugin.settings.hideLinksBetweenRelatedFiles)
                     .onChange(async (value: 'none'|'mainOnly'|'all') => {
@@ -1263,18 +1264,18 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
         });
 
 
-        // new Setting(containerEl)
-        //         .setName("show debug information")
-        //         .setDesc("display debug information in the console")
-        //         .addToggle((toggle) => {
-        //             toggle
-        //                 .setValue(this.plugin.settings.showDebugInfo)
-        //                 .onChange(async (value) => {
-        //                     this.plugin.settings.showDebugInfo = value;
-        //                     this.display();
-        //                     await this.plugin.saveSettings();
-        //                 })
-        //         });
+        new Setting(containerEl)
+                .setName("show debug information")
+                .setDesc("display debug information in the console")
+                .addToggle((toggle) => {
+                    toggle
+                        .setValue(this.plugin.settings.showDebugInfo)
+                        .onChange(async (value) => {
+                            this.plugin.settings.showDebugInfo = value;
+                            this.display();
+                            await this.plugin.saveSettings();
+                        })
+                });
 
     }
 

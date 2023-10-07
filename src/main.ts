@@ -26,7 +26,7 @@ export interface MultipleNotesOutlineSettings {
 	
 	headingLevel: boolean[];
 
-	hideLinksBetweenRelatedFiles: 'none' | 'mainOnly'|'all';
+	hideLinksBetweenRelatedFiles: 'none' | 'mainOnly'|'toMainOnly'|'all';
 
 	allRootItems: boolean;
 	allTasks: boolean;
@@ -126,7 +126,7 @@ export interface MultipleNotesOutlineSettings {
 				'fold'?: boolean;
 				'top'?: boolean
 			};
-		}
+		};
 	}; 
 
 	openAtStartup:{
@@ -141,6 +141,8 @@ export interface MultipleNotesOutlineSettings {
 	showDebugInfo: boolean;
 
 	collapseAllAtStartup: boolean;
+
+	showPropertyLinks: boolean;
 } 
 
 // 設定項目デフォルト
@@ -257,8 +259,8 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 	relatedFiles: {},
 
 	openAtStartup:{
-		file: true,
-		folder: true
+		file: false,
+		folder: false
 	},
 
 	collapseFolder: true,
@@ -266,6 +268,8 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 
 	showDebugInfo: false,
 	collapseAllAtStartup: false,
+
+	showPropertyLinks: true,
 }
 
 
@@ -286,6 +290,12 @@ export interface FileInfo {
 	lines: string[];
 	numOfLines: number;
 	backlinks?: TFile[];
+	frontmatterLinks?: {
+		displayText?: string;
+		key: string;
+		link: string;
+		original: string;
+	}[];
 }
 
 export interface OutlineData {	
@@ -349,7 +359,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 			name: 'Open File View',
 
 			callback: async ()=> {
-				this.checkFileView();
+				this.checkFileView(true);
 			}
 		});
 		this.addCommand({
@@ -357,7 +367,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 			name: 'Open Folder View',
 
 			callback: async ()=> {
-				this.checkFolderView();
+				this.checkFolderView(true);
 			}
 		});
 	
@@ -367,7 +377,14 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 	// } else {
 	// 	this.registerEvent(this.app.workspace.on('layout-ready', this.checkAllView));
 	// }
-	this.app.workspace.onLayoutReady(this.checkAllView);
+	this.app.workspace.onLayoutReady(async()=>{
+		if (this.settings.openAtStartup.file){
+			this.checkFileView(false);
+		}
+		if (this.settings.openAtStartup.folder){
+			this.checkFolderView(false);
+		}
+	});
 
 	// This adds a settings tab so the user can configure various aspects of the plugin
 	this.addSettingTab(new MultipleNotesOutlineSettingTab(this.app, this));
@@ -386,7 +403,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	checkFileView = async():Promise<void> => {
+	checkFileView = async(activateView: boolean):Promise<void> => {
 
 		let [leaf] = this.app.workspace.getLeavesOfType(MultipleNotesOutlineViewType);
 		if (!leaf) {
@@ -409,11 +426,14 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 			}
 			await leaf.setViewState({ type: MultipleNotesOutlineViewType});
 		}
-		this.app.workspace.revealLeaf(leaf);
+
+		if (activateView){
+			this.app.workspace.revealLeaf(leaf);
+		}
 
 	} 
 
-	checkFolderView = async():Promise<void> => {
+	checkFolderView = async(activateView: boolean):Promise<void> => {
 
 		let [leaf] = this.app.workspace.getLeavesOfType(MultipleNotesOutlineFolderViewType);
 		if (!leaf) {
@@ -436,16 +456,10 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 			}
 			await leaf.setViewState({ type: MultipleNotesOutlineFolderViewType});
 		}
-		this.app.workspace.revealLeaf(leaf);
+		if (activateView){
+			this.app.workspace.revealLeaf(leaf);
+		}
 
 	} 
-	checkAllView = async():Promise<void> =>{
-		if (this.settings.openAtStartup.file){
-			this.checkFileView();
-		}
-		if (this.settings.openAtStartup.folder){
-			this.checkFolderView();
-		}
-	}
-	 
+ 
 }

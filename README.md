@@ -73,6 +73,7 @@ If this is the case, change "Note title background color" in the settings, and i
 ## Acknowledgement
 In developing Daily Note Outline and Multiple Notes Outline, I have use many great plugins in Obsidian community as references. In particular, <br>
 [Spaced Repetition by @st3v3nmw](https://github.com/st3v3nmw/obsidian-spaced-repetition) and [Recent Files by @tgrosinger](https://github.com/tgrosinger/recent-files-obsidian) for creating custom views.<br>
+As for getting backlink files, I am using the function of [Dataview by @blacksmithgu](https://github.com/blacksmithgu/obsidian-dataview).<br>
 I also searched and referred to a bunch of posts in plugin-dev channel on Discord.<br><br>
 
 ## Buy Me A Coffee
@@ -80,6 +81,21 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
+- 0.2.0
+	- Improvement
+		- Support for links in properties
+			- Now links in properties are also reflected as outgoing and backlinks.
+			- NOTE: Installation of Dataview plugin is recommended to improve backlink files acquisition speed.
+		- Now you can change the level of headings to be displayed quickly from the context menu of the heading toggle icon('H' icon).
+		- Now colors of MNO views immediately reflects the light/dark mode change.
+		- The option "other files to main file only" has been added to "Hide link elements between displayed files" in the settings.
+			- If this option is selected, links from the main target file to other files will be displayed as outline elements, but links from backlinked files to the main target file will not be displayed.
+	- Fixed
+		- Fixed a problem in which MNO views being active every time Obsidian is started.
+		- Fixed a problem in which the folded state of a file was not stored correctly in Folder view.
+		- Fixed Tooltip preview was not working properly due to recent Obsidian changes.
+	- Changed
+		- The default value of "Open File/Folder View at startup" in the settings has been changed to OFF.
 - 0.1.3
 	- Fixed file view not working properly when backlinks are hidden.
 - 0.1.1
@@ -163,6 +179,7 @@ MNOにはインラインプレビューとツールチッププレビューの2�
 ## Acknowledgement 謝辞
 本プラグインの作成にあたり、多くの素晴らしいObsidianのプラグインを参考にさせて頂きました。特に、<br>
 カスタムビューの作成にSpaced Repetition by st3v3nmwとRecent files by tgrosingerを大いに参考にさせて頂きました。<br>
+バックリンクファイルの取得については、Dataview by blacksmithguの機能を利用させていただいています。<br>
 また、discordの plugin-devの書き込みを多数参考にさせて頂きました。<br><br>
 
 ## Buy Me A Coffee
