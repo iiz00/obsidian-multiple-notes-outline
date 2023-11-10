@@ -25,14 +25,14 @@ export function initFileStatus(files: TAbstractFile[]): FileStatus[] {
 
 
 // 単一ファイルの情報取得
-export async function getFileInfo(app: App, file: TFile, settings:MultipleNotesOutlineSettings, forceGetBacklinks?: boolean = false): Promise<FileInfo> {
+export async function getFileInfo(app: App, file: TFile, settings:MultipleNotesOutlineSettings, forceGetBacklinks: boolean = false, isDataviewEnabled:boolean): Promise<FileInfo> {
 
 
     const content = await this.app.vault.cachedRead(file);
 
     const lines = content.split("\n");
 
-    const backlinkFiles = (settings.showBacklinks || forceGetBacklinks) ? getBacklinkFilesDataview( app, file): undefined;
+    const backlinkFiles = (settings.showBacklinks || forceGetBacklinks) ? getBacklinkFilesDataview( app, file, isDataviewEnabled): undefined;
 
     const info:FileInfo = {
         lines: lines,

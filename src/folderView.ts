@@ -1,17 +1,16 @@
-import { MarkdownView, Notice, setIcon, debounce, Debouncer, Menu, TFolder, ViewStateResult} from 'obsidian';
+import { setIcon, debounce, Debouncer, Menu, TFolder} from 'obsidian';
 
 import { ItemView, WorkspaceLeaf, TFile, TAbstractFile} from 'obsidian'
 
 
 import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings, OutlineData, FileInfo, FileStatus } from 'src/main';
 
-import { getBacklinkFiles, getOutgoingLinkFiles } from 'src/getTargetFiles';
 import { initFileStatus, getFileInfo, getOutline } from 'src/getOutline'
-import { addFlag, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag, sortFileOrder, getTheme, setNoteTitleBackgroundColor } from 'src/util';
+import { checkFlag, sortFileOrder, getTheme, setNoteTitleBackgroundColor, handleDeleteRelatedFiles, handleRenameRelatedFiles, checkRelatedFiles, checkDataview } from 'src/util';
 
-import { drawUI, drawUIFolderView } from 'src/drawUI';
+import { drawUIFolderView } from 'src/drawUI';
 import { constructNoteDOM, constructOutlineDOM } from 'src/constructDOM';
-
+import { checkFavAndRecentFiles, deleteFavAndRecent, handleDeleteFavAndRecentFiles, handleRenameFavAndRecentFiles, updateFavAndRecent } from './FavAndRecent';
 
 export const MultipleNotesOutlineFolderViewType = 'multiple-notes-outline-folder-view';
 
@@ -45,9 +44,10 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		[folderPath:string]:number[]
 	} = {};
 
-	flagChanged: boolean;
-	flagRegetTarget: boolean;
-	flagRenamed: boolean;
+	flagChanged: boolean = false;
+	flagRegetTarget: boolean = false;
+	//flagRenamed: boolean;
+	flagSaveSettings: boolean = false;
 
 	extractMode: boolean = false;
 	extractTask: boolean = false;
@@ -69,13 +69,17 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	// 変更されたファイルの配列。 一定間隔ごとにこのファイルのアウトラインを再読み込みして、更新したらこの配列を空にする
 	changedFiles: TFile[] = [];
-	renamedFiles: { file: TAbstractFile, oldPath: string }[] = [];
+	// renamedFiles: { file: TAbstractFile, oldPath: string }[] = [];
 
 	// viewタイプ DOMのidに付加
-	viewType: string = 'MNOfolderview';
+	viewType: 'file'|'folder' = 'folder';
 
 	// 現在のライトモード/ダークモードの状態
 	theme: 'light' | 'dark';
+
+	pinnedMode = false;
+
+	isDataviewEnabled = false;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -101,8 +105,52 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	
 	async onOpen(){
+		await this.initView();
 
-		this.initView();
+		// Dataviewのロードを待機したところ、却って遅かった。
+		// if (checkDataview(this.app)){
+		// 	const dataviewAPI = getAPI();
+		// 	// dataviewがindex-readyでない場合のみ描画を待機
+		// 	if (!dataviewAPI.index.initialized){
+		// 		this.registerEvent(this.app.metadataCache.on("dataview:index-ready", async() => {
+		// 			await this.initView();
+		// 		}));
+		// 	} else {
+		// 		await this.initView();
+		// 	}
+		// } else {
+		// 	await this.initView();
+		// }
+
+	}
+
+	async onClose(){
+		// Nothin to clean up
+	}
+
+	private async initView() {
+		await this.bootDelay(); 
+		
+		checkRelatedFiles(this.app, this.settings);
+		checkFavAndRecentFiles(this.app, this.settings, this.viewType);
+
+		this.collapseAll = this.settings.collapseAllAtStartup;
+
+		// ノートタイトル背景色の設定
+		this.theme = getTheme();
+		setNoteTitleBackgroundColor(this.theme, this.settings);
+		
+		if (this.targetFolder){
+			this.refreshView(true, true);
+		} else {
+			this.activeFile = this.app.workspace.getActiveFile();
+			if (this.activeFile){
+				this.targetFolder = this.activeFile.parent;
+				this.refreshView(true,true);
+			} else {
+			console.log("Multiple Notes Outline: failed to get active file");
+			}
+		}
 
 		//自動更新のためのデータ変更、ファイル追加/削除の監視 observe file change/create/delete
 		const debouncerRequestRefresh:Debouncer<[]> = debounce(this.autoRefresh,3000,true);
@@ -126,21 +174,35 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			}
 		}));
 
-
 		this.registerEvent(this.app.vault.on('create',(file)=>{
 			this.flagRegetTarget = true;
 			debouncerRequestRefresh.call(this);
 		}));
 
 		this.registerEvent(this.app.vault.on('delete',(file)=>{
+			let changedRelatedFiles = handleDeleteRelatedFiles(file,this.settings);
+			if (changedRelatedFiles){
+				this.flagSaveSettings = true;
+			}
+
+			let changedFavAndRecent = handleDeleteFavAndRecentFiles(file, this.settings);
+			if (changedFavAndRecent){
+				this.flagSaveSettings = true;
+			}
 			this.flagRegetTarget = true;
 			debouncerRequestRefresh.call(this);
 		}));
 
 		this.registerEvent(this.app.vault.on('rename',(file, oldPath)=>{
-			this.renamedFiles.push( {file, oldPath});
+			let changedRelatedFiles = handleRenameRelatedFiles(file,oldPath, this.settings);
+			if (changedRelatedFiles){
+				this.flagSaveSettings = true;
+			}
+			let changedFavAndRecent = handleRenameFavAndRecentFiles(file,oldPath, this.settings);
+			if (changedFavAndRecent){
+				this.flagSaveSettings = true;
+			}
 			this.flagRegetTarget = true;
-			this.flagRenamed = true;
 			debouncerRequestRefresh.call(this);
 		}));
 
@@ -151,33 +213,8 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 				this.theme = newTheme;
 				setNoteTitleBackgroundColor(this.theme, this.settings);
 			}
-
 		}));
-	}
 
-	async onClose(){
-		// Nothin to clean up
-	}
-
-	private async initView() {
-		await this.bootDelay(); //起動直後に少しウエイト（DNOの時はこれがないとデータ取得に失敗していた）
-		this.collapseAll = this.settings.collapseAllAtStartup;
-
-		// ノートタイトル背景色の設定
-		this.theme = getTheme();
-		setNoteTitleBackgroundColor(this.theme, this.settings);
-		
-		if (this.targetFolder){
-			this.refreshView(true, true);
-		} else {
-			this.activeFile = this.app.workspace.getActiveFile();
-			if (this.activeFile){
-				this.targetFolder = this.activeFile.parent;
-				this.refreshView(true,true);
-			} else {
-			console.log("Multiple Notes Outline: failed to get active file");
-			}
-		}
 	}	
 		
 	private async bootDelay(): Promise<void> {
@@ -186,7 +223,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	// ファイル修正、削除、リネームなどの際の自動更新
 	private async autoRefresh(){
-		if (!(this.flagChanged || this.flagRegetTarget || this.flagRenamed)){
+		if (!(this.flagChanged || this.flagRegetTarget || this.flagSaveSettings)){
 			return;
 		}
 		if (this.flagChanged && !this.flagRegetTarget){
@@ -198,7 +235,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 					}
 
 					//変更したファイルのファイル情報とアウトラインを更新
-					this.fileInfo[folder][index] = await getFileInfo(this.app, this.targetFiles[folder][index] as TFile, this.settings);
+					this.fileInfo[folder][index] = await getFileInfo(this.app, this.targetFiles[folder][index] as TFile, this.settings, false, this.isDataviewEnabled);
 					const newData = await getOutline(this.app, this.targetFiles[folder][index] as TFile, this.fileStatus[folder][index], this.fileInfo[folder][index], this.settings);
 					if (newData) {
 						this.outlineData[folder][index] = newData;
@@ -206,42 +243,26 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 					}
 
 					// DOMを更新
-					const updateNoteChildrenEl = document.getElementById(this.viewType+this.targetFiles[folder][index].path);
+					const updateNoteChildrenEl = document.getElementById('MNO'+this.viewType+this.targetFiles[folder][index].path);
 					updateNoteChildrenEl.empty();
 					constructOutlineDOM.call(this, this.targetFiles[folder][index], this.fileInfo[folder][index], this.outlineData[folder][index], updateNoteChildrenEl, 'folder');
 				}
 			}
 		}
 
-		if (this.flagRenamed){
-			for (let i=0; i < this.renamedFiles.length; i++){
 
-				// relatedFilesをアップデート
-				for (let srcFilePath in this.settings.relatedFiles){
-
-					for (let dstFilePath in this.settings.relatedFiles[srcFilePath]){
-						if (dstFilePath == this.renamedFiles[i].oldPath){
-							this.settings.relatedFiles[srcFilePath][this.renamedFiles[i].file.path]= this.settings.relatedFiles[srcFilePath][dstFilePath];
-							delete this.settings.relatedFiles[srcFilePath][dstFilePath];
-						}
-					}
-
-					if (srcFilePath == this.renamedFiles[i].oldPath){
-						this.settings.relatedFiles[this.renamedFiles[i].file.path]= this.settings.relatedFiles[srcFilePath];
-						delete this.settings.relatedFiles[srcFilePath];
-					}
-				}
-			}
+		if (this.flagSaveSettings){
 			await this.plugin.saveSettings();
 		}
 		if (this.flagRegetTarget){
 			this.refreshView(this.flagRegetTarget, this.flagRegetTarget);
 		}
 		this.changedFiles = [];
-		this.renamedFiles = [];
+		// this.renamedFiles = [];
 		this.flagRegetTarget = false;
 		this.flagChanged = false;
-		this.flagRenamed = false;
+		// this.flagRenamed = false;
+		this.flagSaveSettings = false;
 	}
 
 	// リフレッシュセンター 
@@ -253,6 +274,8 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		// 描画所要時間を測定
 		const startTime = performance.now();
 
+		//dataviewオンオフチェック
+		this.isDataviewEnabled = checkDataview(this.app);
 
 		// スクロール位置の取得
 		const containerEl = document.getElementById('MNOfolderview-listcontainer');
@@ -323,7 +346,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			} else {
 				// ファイルなら情報を取得
 				if ((this.filecount < this.settings.readLimit || status[i].isTop )){
-					const info = await getFileInfo(this.app, files[i] as TFile, this.settings);
+					const info = await getFileInfo(this.app, files[i] as TFile, this.settings, false, this.isDataviewEnabled);
 					fileInfo.push(info);
 
 					const data = await getOutline(this.app, files[i] as TFile, status[i], info, this.settings);
@@ -365,16 +388,46 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 		// ターゲットのフォルダ名
 		const folderEl: HTMLElement = rootChildrenEl.createDiv("tree-itme nav-folder");
-		const folderTitleEl: HTMLElement = folderEl.createDiv("tree-item-self is-clickable mod-collapsible nav-folder-title");
+		const folderTitleEl: HTMLElement = folderEl.createDiv("tree-item-self is-clickable mod-collapsible nav-folder-title is-targetfolder");
 		// setIcon(folderTitleEl, 'folder');
 		folderTitleEl.createDiv("tree-item-inner nav-folder-title-content").setText(this.targetFolder.path);
 
+		folderTitleEl.addEventListener(
+			"contextmenu",
+			(event: MouseEvent) => {
+				const menu = new Menu();
+				// favoriteに追加/削除
+				if (this.settings.favorite.folder.includes(this.targetFolder.path)){
+					menu.addItem((item)=>
+						item		
+							.setTitle("MNO: Remove from favorites")
+							.setIcon('bookmark-minus')
+							.onClick(async ()=> {
+								deleteFavAndRecent.call(this, this.targetFolder.path, 'folder', 'favorite');
+								await this.plugin.saveSettings();
+							}));
+				} else {
+					menu.addItem((item)=>
+						item
+							.setTitle("MNO: Add to favorites")
+							.setIcon('bookmark-plus')
+							.onClick(async ()=> {
+								updateFavAndRecent.call(this, this.targetFolder.path, 'folder','favorite');
+								await this.plugin.saveSettings();
+							}))
+				}
+				menu.showAtMouseEvent(event);
+			}
+		)
+
+		const folderChildrenEl: HTMLElement = folderEl.createDiv("tree-item-children nav-folder-children");
+
 		// Always on Top
-		const categoryAOTEl: HTMLElement = rootChildrenEl.createDiv("tree-item nav-folder mod-root");
+		const categoryAOTEl: HTMLElement = folderChildrenEl.createDiv("tree-item nav-folder");
 
 
 		// メインファイル
-		const categoryMainEl: HTMLElement = rootChildrenEl.createDiv("tree-item nav-folder mod-root");
+		const categoryMainEl: HTMLElement = folderChildrenEl.createDiv("tree-item nav-folder"); // mod-root を除去した
 		constructNoteDOM.call(this, this.targetFiles[this.targetFolder.path], 
 			this.fileStatus[this.targetFolder.path], this.fileInfo[this.targetFolder.path], this.outlineData[this.targetFolder.path],
 			categoryMainEl, 'folder', categoryAOTEl, this.targetFolder, this.fileOrder[this.targetFolder.path]);

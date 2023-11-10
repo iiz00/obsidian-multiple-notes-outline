@@ -14,7 +14,7 @@ I have previously created a plugin called Daily Note Outline Plugin(https://gith
 
 ## Usage
 ### Getting Started
-Install MNO using Obsidian BRAT plugin and enable it.<br>
+Install Multiple Notes Outline from Community Plugin list and enable it.<br>
 As noted in the 'About performance' section below, I recommend installing and activating Dataview community plugin to improve the speed of retrieving backlink files.<br>
 Select Multiple Notes Outline: Open File View or Open Folder View from the command palette.<br>
 
@@ -30,7 +30,8 @@ Lists the outlines of the files in the folder where the active file resides at s
 
 ### UI icons
 ![UIicons](others/UIicon.png)<br>
-Click the refresh icon to focus on the currently active file or when you need to redraw the view.
+Click the refresh icon to focus on the currently active file or when you need to redraw the view.In File View, if you right-click and select `Pin`, the view will not transition when the active note changes until you click again.<br>
+Left-clicking on the bookmark icon opens a list of favorites and selecting an item opens that view directly. Right-clicking opens a list of recently viewed views. Favorites can be added by selecting "Add to favorites" from the context menu of the file or folder name of the view, or by pressing Ctrl + Enter in the recent views list.<br>
 The gear icon opens the settings window. Right-click to open a context menu to quickly change some settings.<br>
 H, The Link, List, and Backlink icons show/hide the respective outline elements.<br>
 Clicking the right-most icon(chevrons-down-up) collapses all outlines; clicking again undoes them.
@@ -81,6 +82,20 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
+- 0.3.0
+	- New functions
+		- Recent/Favorites
+			- Left-click on the new bookmark icon to view favorite files/folders, or right-click to view a list of recently viewed files and folders to jump directly to them.
+			- Favorite files/folders can be added from the context menu of the file/folder name in each view or from the history list.
+		- Pinning
+			- In File View, when the view is set to redraw each time the active file changes (which is the default setting), it can now be pinned from the context menu of the refresh button. In the pinned state, the view will not change even if the active file changes until the update button (pin button) is pressed again.
+			- By default, when a file is selected from History/Favorites, it is automatically pinned. This can be changed from the settings screen.
+	- Improvements
+		- Commands to clear information about folding/always-on-top state were added.
+		- Tag elements can now be searched for from their context menu.
+		- Pressing Ctrl on a link/backlink element now previews the linked/source note, respectively, rather than the element portion of that note (this is inconsistent with previewing other elements, but was deemed more practical)
+		- Jump to/preview link to heading should work correctly.
+		- And some other minor improvements and fixes.
 - 0.2.0
 	- Improvement
 		- Support for links in properties
@@ -136,7 +151,8 @@ Obsidian BRAT pluginを使用してインストールし、有効化してくだ
 
 ### UI icon
 ![UIicons](others/UIicon.png)<br>
-更新アイコンは現在アクティブなファイルにフォーカスする場合や再描画が必要な時にクリックしてください。<br>
+更新アイコンは現在アクティブなファイルにフォーカスする場合や再描画が必要な時にクリックしてください。File Viewの場合、右クリックからPinを選択すると、viewがピン留め状態になります。もう一度クリックするまで、アクティブなノートが変わってもviewが遷移しなくなります。<br>
+ブックマークアイコンは左クリックでお気に入り、右クリックで最近表示したビューのリストを開きます。お気に入りに登録するには、いずれかのビューのファイル名/フォルダ名のコンテキストメニューから「Add to favorites」を選ぶか、最近表示したビューの履歴からCtrl + Enterで選択してください。<br>
 歯車アイコンは設定画面を開きます。右クリックでいくつかのオプションを素早く切り替えられます。<br>
 H, リンク、リスト、バックリンクのアイコンはそれぞれのアウトライン要素の表示/非表示を切り替えます。<br>
 一番右のアイコンをクリックすると全てのアウトラインを折りたたみ、もう一度クリックすると解除します。<br>

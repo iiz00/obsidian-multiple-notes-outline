@@ -2,7 +2,8 @@ import { MultipleNotesOutlineView } from "./fileView";
 import { MultipleNotesOutlineFolderView } from "./folderView";
 import MultipleNotesOutlinePlugin from "./main";
 
-import { setIcon, TFile, Menu } from 'obsidian';
+import { setIcon, TFile, Menu, TFolder } from 'obsidian';
+import { ModalJump, updateFavAndRecent } from "./FavAndRecent";
 
 // 操作アイコン部分を描画
 export function drawUI(): void {
@@ -12,6 +13,7 @@ export function drawUI(): void {
 
     // アイコン描画
     uiUpdate.call(this, navButtonContainer);
+    uiFavAndRecent.call(this, navButtonContainer);
     uiSetting.call(this, navButtonContainer);
     uiToggleHeading.call(this, navButtonContainer);
     uiToggleLink.call(this, navButtonContainer);
@@ -34,6 +36,7 @@ export function drawUIFolderView(): void {
 
     // アイコン描画
     uiUpdateFolderView.call(this, navButtonContainer);
+    uiFavAndRecent.call(this, navButtonContainer);
     uiSettingFolderView.call(this, navButtonContainer);
     uiToggleHeading.call(this, navButtonContainer);
     uiToggleLink.call(this, navButtonContainer);
@@ -48,22 +51,82 @@ export function drawUIFolderView(): void {
     this.contentEl.appendChild(navHeader);
 }
 
-// 更新ボタン
+// 更新ボタン file view
 function uiUpdate (parentEl:HTMLElement):void{
     let navActionButton = parentEl.createDiv("clickable-icon nav-action-button");
-    navActionButton.ariaLabel = "update view";
-    setIcon(navActionButton,"refresh-cw");
-    navActionButton.addEventListener(
-        "click",
-        async (event:MouseEvent) =>{
-            const file = this.app.workspace.getActiveFile();
-            if (file instanceof TFile){
-                this.activeFile = file;
-                this.targetFiles.main[0] = this.activeFile;
-                this.refreshView(true, true);
+    
+    if (this.pinnedMode == false){
+        navActionButton.ariaLabel = "update view";
+        setIcon(navActionButton,"refresh-cw");
+        navActionButton.addEventListener(
+            "click",
+            async (event:MouseEvent) =>{
+                const file = this.app.workspace.getActiveFile();
+                if (file instanceof TFile){
+                    this.activeFile = file;
+                    this.targetFiles.main[0] = this.activeFile;
+    
+                    updateFavAndRecent.call(this, this.activeFile.path,'file','recent');
+    
+                    this.refreshView(true, true);
+                }
             }
-        }
-    );
+        );
+        navActionButton.addEventListener(
+            "contextmenu",
+            (event:MouseEvent) =>{
+                const menu = new Menu();
+                menu.addItem((item)=>
+                    item
+                        .setTitle('Pin')
+                        .setIcon('pin')
+                        .onClick(()=>{
+                            this.pinnedMode = true;
+                            this.refreshView(false,false);
+                        })
+                );
+                menu.showAtMouseEvent(event);
+            }
+        );
+    } else {
+        // ピン留めされている場合は更新ボタンでなくピンを表示
+        navActionButton.ariaLabel = "unpin and update view";
+        setIcon(navActionButton,"pin");
+        navActionButton.classList.add('is-active');
+        navActionButton.addEventListener(
+            "click",
+            async (event:MouseEvent) =>{
+                this.pinnedMode = false;
+                const file = this.app.workspace.getActiveFile();
+                if (file instanceof TFile){
+                    this.activeFile = file;
+                    this.targetFiles.main[0] = this.activeFile;
+    
+                    updateFavAndRecent.call(this, this.activeFile.path,'file','recent');
+    
+                    this.refreshView(true, true);
+                }
+            }  
+        );
+        navActionButton.addEventListener(
+            "contextmenu",
+            (event:MouseEvent) =>{
+                const menu = new Menu();
+                menu.addItem((item)=>
+                    item
+                        .setTitle('Unpin')
+                        .setIcon('pin-off')
+                        .onClick(()=>{
+                            this.pinnedMode = false;
+                            this.refreshView(false,false);
+                        })
+                );
+                menu.showAtMouseEvent(event);
+            }
+        );
+    }
+    
+
 }
 // 更新ボタン folder view
 function uiUpdateFolderView (parentEl:HTMLElement):void{
@@ -77,7 +140,10 @@ function uiUpdateFolderView (parentEl:HTMLElement):void{
             if (file instanceof TFile){
                 this.targetFolder = file.parent;
                 this.hasMainChanged = true;
+
+                updateFavAndRecent.call(this, this.targetFolder.path,'folder','recent');
                 
+
                 // 保留
                 // this.app.workspace.requestSaveLayout();
 
@@ -88,6 +154,69 @@ function uiUpdateFolderView (parentEl:HTMLElement):void{
     );
 }
 
+// 履歴/お気に入り
+function uiFavAndRecent (parentEl:HTMLElement):void{
+    let navActionButton = parentEl.createDiv("clickable-icon nav-action-button");
+    navActionButton.ariaLabel = "favorite/recent";
+    setIcon(navActionButton,"bookmark");
+    // 左クリックでfavorites
+    navActionButton.addEventListener(
+        "click",
+        async (event:MouseEvent) =>{
+            const onSubmit = (target:string)=>{
+                const targetObj = this.app.vault.getAbstractFileByPath(target);
+                if (targetObj instanceof TFile){
+                    this.targetFiles.main[0] = targetObj;
+                    this.hasMainChanged = true;
+                    if (this.settings.pinAfterJump && this.settings.autoupdateFileView){
+                        this.pinnedMode = true;
+                    }
+                    updateFavAndRecent.call(this, targetObj.path, 'file','recent');
+                    this.refreshView(true,true);
+                }
+                if (targetObj instanceof TFolder){
+                    this.targetFolder = targetObj;
+                    this.hasMainChanged = true;
+
+                    updateFavAndRecent.call(this, targetObj.path, 'folder','recent');
+                    this.refreshView(true,true);
+                }
+
+            }
+            new ModalJump(this.app, this, this.viewType, 'favorite', onSubmit).open();
+        }
+    );
+    // 右クリックで履歴
+    navActionButton.addEventListener(
+        "contextmenu",
+        async (event:MouseEvent) =>{
+            event.preventDefault();
+            const onSubmit = (target:string)=>{
+                const targetObj = this.app.vault.getAbstractFileByPath(target);
+                if (targetObj instanceof TFile){
+                    this.targetFiles.main[0] = targetObj;
+                    this.hasMainChanged = true;
+                    if (this.settings.pinAfterJump && this.settings.autoupdateFileView){
+                        this.pinnedMode = true;
+                    }
+
+                    updateFavAndRecent.call(this, targetObj.path, 'file','recent');
+                    this.refreshView(true,true);
+                }
+                if (targetObj instanceof TFolder){
+                    this.targetFolder = targetObj;
+                    this.hasMainChanged = true;
+
+                    updateFavAndRecent.call(this, targetObj.path, 'folder','recent');
+                    this.refreshView(true,true);
+                }
+
+            }
+            new ModalJump(this.app, this, this.viewType, 'recent', onSubmit).open();
+        }
+    );
+
+}
 
 
 // 設定ボタン

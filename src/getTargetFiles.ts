@@ -35,15 +35,14 @@ export function getBacklinkFiles(app: App, file:TFile):TFile[]{
     return files;
 }
 
-export function getBacklinkFilesDataview(app:App, file:TFile):TFile[]{
+export function getBacklinkFilesDataview(app:App, file:TFile, isDataviewEnabled:boolean):TFile[]{
     let files:TFile[]=[];
 
-    if (!app.plugins.plugins['dataview']){
+    if (!isDataviewEnabled){
         return getBacklinkFiles(app, file);
     }
 
-    let backlinks = app.plugins.plugins?.dataview?.api?.pages(`"${file.path}"`)?.values[0]?.file.inlinks.values;
-
+    let backlinks = app.plugins.plugins.dataview?.api?.pages(`"${file.path}"`)?.values[0]?.file.inlinks.values;
     if (!backlinks) {
         return getBacklinkFiles(app,file);
     }

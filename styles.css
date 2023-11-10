@@ -56,6 +56,15 @@ body{
     z-index: 2;
 }
 
+/*folder viewのターゲットフォルダの名前は固定*/
+/* .workspace-leaf-content[data-type="multiple-notes-outline-folder-view"] .nav-folder-title.is-targetfolder{
+
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+} */
+
 /* ホバー時 */
 .workspace-leaf-content[data-type="multiple-notes-outline-folder-view"] .tree-item-self.is-clickable.nav-folder-title:hover,
 .workspace-leaf-content[data-type="multiple-notes-outline"] .tree-item-self.is-clickable.nav-folder-title:hover{
@@ -81,6 +90,8 @@ body{
     padding: 2px 0;
 }
 
+/* ノート/フォルダタイトル  note/folder title */
+/* If you want to wrap lines, change `nowrap` to `normal`. */
 .workspace-leaf-content[data-type="multiple-notes-outline-folder-view"] .nav-folder-title-content,
 .workspace-leaf-content[data-type="multiple-notes-outline"] .nav-folder-title-content {
     white-space: nowrap;
@@ -91,6 +102,7 @@ body{
 
 
 /* アウトライン要素 outline elements*/
+/* If you want to wrap lines, change `nowrap` to `normal`. */
 .workspace-leaf-content[data-type="multiple-notes-outline-folder-view"] .nav-file-title-content,
 .workspace-leaf-content[data-type="multiple-notes-outline"] .nav-file-title-content{
     

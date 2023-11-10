@@ -1,9 +1,10 @@
-import { TFile, setIcon, Menu, MarkdownView, App, TAbstractFile, TFolder, setTooltip } from 'obsidian';
+import { TFile, setIcon, Menu, MarkdownView, App, TAbstractFile, TFolder, setTooltip, parseLinktext, getLinkpath } from 'obsidian';
 
 import { OutlineData, FileInfo, FileStatus } from 'src/main';
 import { MultipleNotesOutlineViewType, Category } from './fileView';
 import { getFileInfo, getOutline } from 'src/getOutline';
-import { addFlag, checkFlag, cleanRelatedFiles, removeFlag, toggleFlag } from 'src/util';
+import { addFlag, checkFlag, cleanRelatedFiles, getSubpathPosition, removeFlag, toggleFlag } from 'src/util';
+import { deleteFavAndRecent, updateFavAndRecent } from './FavAndRecent';
 
 
 export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], info: FileInfo[], data:OutlineData[][], 
@@ -18,7 +19,9 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 				continue;
 			}
 
-			// ノートのタイトル部分作成 = フォルダ作成
+			const noteType = status[si].isFolder ? 'folder':'file';
+
+			// ノートのタイトル部分作成 (Explorerのフォルダに相当）
 			// AOTフラグオンならトップに
 			const belongsAOT = Boolean(status[si].isTop == true && !Object.values(status[si].duplicated).includes(true)) && category != 'main';
 			let noteEl: HTMLElement;
@@ -37,7 +40,7 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 			if (belongsAOT){
 				nIcon = 'pin';
 			} else {
-				if (status[si].isFolder){
+				if (noteType == 'folder'){
 					nIcon = 'folder';
 				} else {
 					nIcon = 'file';
@@ -55,7 +58,7 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 			const noteChildrenEl: HTMLElement = noteEl.createDiv("tree-item-children nav-folder-children");
 		
 			// id 付加
-			noteChildrenEl.id = this.viewType+files[si].path;
+			noteChildrenEl.id = 'MNO'+this.viewType+files[si].path;
 
 			// 折りたたみアイコン
 			const noteCollapseIcon:HTMLElement = noteTitleEl.createDiv("tree-item-icon collapse-icon nav-folder-collapse-indicator");
@@ -69,8 +72,8 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 
 					// アウトラインが読み込まれていない場合
 					if (!status[si].outlineReady){
-						if (!status[si].isFolder){
-							info[si] = await getFileInfo(this.app, files[si] as TFile, this.settings);
+						if (noteType =='file'){
+							info[si] = await getFileInfo(this.app, files[si] as TFile, this.settings, false, this.isDataviewEnabled);
 							data[si] = await getOutline(this.app, files[si] as TFile, status[si], info[si], this.settings);
 							status[si].outlineReady = true;
 
@@ -137,14 +140,14 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 			})
 
 			// ファイル名
-			const nameLabel = (status[si].isFolder)? files[si].name : (files[si] as TFile).basename;
+			const nameLabel = (noteType == 'folder')? files[si].name : (files[si] as TFile).basename;
 			noteTitleEl.createDiv("tree-item-inner nav-folder-title-content").setText(nameLabel);
 
 			//ファイル名の後の情報を表示
 			attachFileInfo(noteTitleEl, status[si], info[si], data[si], this.settings.displayFileInfo);
 
 			//ノートタイトルをクリックしたらそのファイルをopen
-			if (!status[si].isFolder){
+			if (noteType == 'file'){
 				noteTitleEl.addEventListener(
 					"click",
 					(event: MouseEvent) => {
@@ -176,11 +179,13 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 				(event: MouseEvent) => {
 					const menu = new Menu();
 
+					menu.addSeparator();
+
 					//Always on Top に指定/解除
 					if (checkFlag(srcFile, files[si], 'top', this.settings)){
 						menu.addItem((item)=>
 							item		
-								.setTitle("Stop displaying at the top")
+								.setTitle("MNO: Stop displaying at the top")
 								.setIcon('pin-off')
 								.onClick(async ()=> {
 									removeFlag(srcFile, files[si], 'top', this.settings);
@@ -190,7 +195,7 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 					} else {
 						menu.addItem((item)=>
 							item
-								.setTitle("Always display at the top")
+								.setTitle("MNO: Always display at the top")
 								.setIcon('pin')
 								.onClick(async ()=> {
 									addFlag(srcFile, files[si], 'top', this.settings);
@@ -198,7 +203,29 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 									this.refreshView(true, true);
 								}))
 					}
-					if (!status[si].isFolder){
+
+					// favoriteに追加/削除
+					if (this.settings.favorite[noteType].includes(files[si].path)){
+						menu.addItem((item)=>
+							item		
+								.setTitle("MNO: Remove from favorites")
+								.setIcon('bookmark-minus')
+								.onClick(async ()=> {
+									deleteFavAndRecent.call(this, files[si].path, noteType, 'favorite');
+									await this.plugin.saveSettings();
+								}));
+					} else {
+						menu.addItem((item)=>
+							item
+								.setTitle("MNO: Add to favorites")
+								.setIcon('bookmark-plus')
+								.onClick(async ()=> {
+									updateFavAndRecent.call(this, files[si].path,noteType,'favorite');
+									await this.plugin.saveSettings();
+								}))
+					}
+
+					if (noteType == 'file'){
 						//新規タブ に開く
 						menu.addItem((item)=>
 							item
@@ -247,7 +274,7 @@ export function constructNoteDOM (files:TAbstractFile[], status: FileStatus[], i
 			}
 
 			
-			if (status[si].isFolder){
+			if (noteType == 'folder'){
 				// サブフォルダのDOMを作成
 				constructNoteDOM.call(this, this.targetFiles[files[si].path],
 					this.fileStatus[files[si].path], this.fileInfo[files[si].path], this.outlineData[files[si].path],
@@ -299,10 +326,11 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 	if (this.settings.showPropertyLinks && info.frontmatterLinks){
 		frontmatterlinksloop: for (let j = 0; j < info.frontmatterLinks.length; j++){
 		
-			const linkTarget = this.app.metadataCache.getFirstLinkpathDest(info.frontmatterLinks[j].link, file.path);
+			const linkTarget = this.app.metadataCache.getFirstLinkpathDest(parseLinktext(info.frontmatterLinks[j].link).path, file.path);
 			if (!(linkTarget instanceof TFile)) {
 				continue;
 			}
+			const linkSubpath = parseLinktext(info.frontmatterLinks[j].link).subpath;
 			// 抽出 extract  filter関連コメントアウト
 			// if (this.extractMode == true) {
 			// 	if (this.extractTask == true || !info[i].frontmatterLinks[j].displayText.toLowerCase().includes(this.settings.wordsToExtract.toLowerCase())){
@@ -348,14 +376,6 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 			//クリック時
 			outlineTitle.addEventListener(
 				"click",
-				// async(event: MouseEvent) => {
-				//     event.preventDefault();
-				//     // if (file != this.activeFile){
-				//     //     this.holdUpdateOnce = true;
-				//     // }
-				//     await this.app.workspace.getLeaf().openFile(info[i].backlinks[j]);
-				//     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-				// },
 				(event: MouseEvent) => {
 					event.preventDefault();
 					this.app.workspace.getLeaf().openFile(file);
@@ -364,13 +384,24 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 			);
 			//hover preview 
 			outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
-				this.app.workspace.trigger('hover-link', {
-					event,
-					source: MultipleNotesOutlineViewType,
-					hoverParent: parentEl,   // rootEl→parentElにした
-					targetEl: outlineTitle,
-					linktext: file.path,
-				});
+				if (linkTarget){
+					//リンク情報にsubpath（見出しへのリンク）が含まれる場合、その位置を取得
+					let posInfo = {};
+					if(linkSubpath){
+						const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+						if (subpathPosition?.start?.line){
+							posInfo = { scroll: subpathPosition.start.line};
+						}
+					}
+					this.app.workspace.trigger('hover-link', {
+						event,
+						source: MultipleNotesOutlineViewType,
+						hoverParent: parentEl,   // rootEl→parentElにした
+						targetEl: outlineTitle,
+						linktext: linkTarget.path,
+						state: posInfo
+					});
+				}
 			});
 
 			// contextmenu
@@ -400,7 +431,27 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 							.setTitle("Open linked file")
 							.setIcon("links-going-out")
 							.onClick(async()=>{
-								this.app.workspace.getLeaf().openFile(linkTarget);
+								await this.app.workspace.getLeaf().openFile(linkTarget);
+								if (linkSubpath){
+									const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+									const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+
+									if (view && subpathPosition) {
+										view.editor.focus();
+										view.editor.setCursor (subpathPosition.start?.line, 0);
+										view.editor.scrollIntoView( {
+											from: {
+												line: subpathPosition.start?.line,
+												ch:0
+											},
+											to: {
+												line: subpathPosition.start?.line,
+												ch:0
+											}
+										}, true);
+									}
+								}
+
 							})
 					);
 					menu.addSeparator();
@@ -434,7 +485,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 					menu.addItem((item)=>
 						item
 							.setTitle("Open in new window")
-							.setIcon("box-select")
+							.setIcon("scan")
 							.onClick(async()=> {
 								if (file != this.activeFile){
 									this.holdUpdateOnce = true;
@@ -460,6 +511,8 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 
 			// 現アウトライン要素の種別を取得
 			const element = data[j].typeOfElement;
+			const linkTarget = (element !== 'link')? null : this.app.metadataCache.getFirstLinkpathDest(parseLinktext(data[j]?.link).path, file.path);
+			const linkSubpath = (!linkTarget)? undefined : parseLinktext(data[j]?.link).subpath;
 
 			//// include mode filter関連コメントアウト
 			// if (this.includeMode && this.settings.includeOnly == element){
@@ -586,11 +639,10 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 					}
 				}
 				if (this.settings.hideLinksBetweenRelatedFiles == 'all'){
-					const linkTargetPath = this.app.metadataCache.getFirstLinkpathDest(data[j].link, file.path)?.path;
-					if (linkTargetPath){
+					if (linkTarget.path){
 						for (let category in this.targetFiles){
 							// data[j].linkに一致するファイル名があるかどうかの処理。
-							if (this.targetFiles[category].some( (targetfile) => targetfile.path == linkTargetPath)){
+							if (this.targetFiles[category].some( (targetfile) => targetfile.path == linkTarget.path)){
 								continue elementloop;
 							}
 						}
@@ -754,7 +806,6 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 				previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
 				setTooltip(outlineTitle, previewText2, {classes:['daily-note-preview']});
 
-				// outlineTitle.ariaLabel = previewText2;
 				outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
 				outlineTitle.setAttribute('data-tooltip-delay','10');
 				// outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
@@ -792,14 +843,37 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 
 			//hover preview 
 			outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
-				this.app.workspace.trigger('hover-link', {
-					event,
-					source: MultipleNotesOutlineViewType,
-					hoverParent: parentEl,   // rootEl→parentElにした
-					targetEl: outlineTitle,
-					linktext: file.path,
-					state:{scroll: data[j].position.start.line}
-				});
+				// リンクエレメントでリンク先が存在するときはそちらをプレビュー
+				if (element == 'link' && linkTarget){
+					//リンク情報にsubpath（見出しへのリンク）が含まれる場合、その位置を取得
+					
+					let posInfo = {};
+					if (linkSubpath){
+						const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+						if (subpathPosition?.start?.line){
+							posInfo = { scroll: subpathPosition.start.line};
+						}
+					}
+					this.app.workspace.trigger('hover-link', {
+						event,
+						source: MultipleNotesOutlineViewType,
+						hoverParent: parentEl,   // rootEl→parentElにした
+						targetEl: outlineTitle,
+						linktext: linkTarget.path,
+						//state:{scroll: data[j].position.start.line}
+						state: posInfo
+					});
+				} else {
+					this.app.workspace.trigger('hover-link', {
+						event,
+						source: MultipleNotesOutlineViewType,
+						hoverParent: parentEl,   // rootEl→parentElにした
+						targetEl: outlineTitle,
+						linktext: file.path,
+						state:{scroll: data[j].position.start.line}
+					});
+				}
+				
 			});
 
 			// contextmenu
@@ -830,8 +904,42 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 								.setTitle("Open linked file")
 								.setIcon("links-going-out")
 								.onClick(async()=>{
-									const linkedFile = app.metadataCache.getFirstLinkpathDest(data[j].link, file.path);
-									this.app.workspace.getLeaf().openFile(linkedFile);
+									await this.app.workspace.getLeaf().openFile(linkTarget);
+									if (linkSubpath){
+										const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+										const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+
+										if (view && subpathPosition) {
+											view.editor.focus();
+											view.editor.setCursor (subpathPosition.start?.line, 0);
+											view.editor.scrollIntoView( {
+												from: {
+													line: subpathPosition.start?.line,
+													ch:0
+												},
+												to: {
+													line: subpathPosition.start?.line,
+													ch:0
+												}
+											}, true);
+										}
+									}
+									
+
+
+								})
+						);
+						menu.addSeparator();
+					}
+
+					if (element =='tag'){
+						menu.addItem((item)=>
+							item
+								.setTitle("Search this tag")
+								.setIcon("search")
+								.onClick(async()=>{
+									const searchString = "tag: #"+ data[j].displayText;
+									this.app.internalPlugins.plugins["global-search"]?.instance.openGlobalSearch(searchString);
 								})
 						);
 						menu.addSeparator();
@@ -847,7 +955,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 									this.holdUpdateOnce = true;
 								}
 								await this.app.workspace.getLeaf('tab').openFile(file);
-								this.scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
 
 							})
 					);
@@ -861,20 +969,29 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 									this.holdUpdateOnce = true;
 								}
 								await this.app.workspace.getLeaf('split').openFile(file);
-								this.scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
 							})
 					);
 					//新規ウィンドウに開く
 					menu.addItem((item)=>
 						item
 							.setTitle("Open in new window")
-							.setIcon("box-select")
+							.setIcon("scan")
 							.onClick(async()=> {
 								if (file != this.activeFile){
 									this.holdUpdateOnce = true;
 								}
 								await this.app.workspace.getLeaf('window').openFile(file);
-								this.scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								// open in new windowはgetLeaf('window').openFile(file)でやるより
+								// openPopoutLeaf({size:{}}).openFile(file)の方がコンパクト？要調査
+
+								// console.log(this.app.workspace.floatingSplit)
+								// await this.app.workspace.openPopoutLeaf({size:{
+								// 	width: 200, height: 200
+								// }}).openFile(file);
+								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								//console.log(this.app.workspace.floatingSplit);
+								//require("electron").remote.getCurrentWindow().setAlwaysOnTop(true);
 							})
 					);
 

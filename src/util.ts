@@ -1,5 +1,5 @@
-import { App, TFile, TAbstractFile} from 'obsidian';
-import { FILE_TITLE_BACKGROUND_COLOR, FILE_TITLE_BACKGROUND_COLOR_HOVER, FileInfo, FileStatus, MultipleNotesOutlineSettings, OutlineData} from 'src/main';
+import { App, TFile, TAbstractFile, Scope, Setting, Modal, Pos} from 'obsidian';
+import MultipleNotesOutlinePlugin, { FILE_TITLE_BACKGROUND_COLOR, FILE_TITLE_BACKGROUND_COLOR_HOVER, FileInfo, FileStatus, MultipleNotesOutlineSettings, OutlineData} from 'src/main';
 
 // data.jsonのrelatedFilesを掃除：値が空配列のプロパティを削除
 export function cleanRelatedFiles(srcFile:TAbstractFile, dstFile:TAbstractFile, settings:MultipleNotesOutlineSettings): void {
@@ -40,6 +40,49 @@ export function toggleFlag(srcFile:TAbstractFile, dstFile:TAbstractFile, flag: '
     } else {
         addFlag(srcFile, dstFile, flag, settings);
     }
+}
+
+
+// relatedFilesのrenameに対応
+export function handleRenameRelatedFiles(renamedFile: TAbstractFile, oldPath: string, settings: MultipleNotesOutlineSettings):boolean{
+    let renamed = false;
+    for (let srcFilePath in settings.relatedFiles){
+
+        for (let dstFilePath in settings.relatedFiles[srcFilePath]){
+            if (dstFilePath == oldPath){
+                settings.relatedFiles[srcFilePath][renamedFile.path]= settings.relatedFiles[srcFilePath][dstFilePath];
+                delete settings.relatedFiles[srcFilePath][dstFilePath];
+                renamed = true;
+            }
+        }
+
+        if (srcFilePath == oldPath){
+            settings.relatedFiles[renamedFile.path] = settings.relatedFiles[srcFilePath];
+            delete settings.relatedFiles[srcFilePath];
+            renamed = true;
+        }
+    }
+    return renamed;
+}
+
+// relatedFilesのdeleteに対応
+export function handleDeleteRelatedFiles(deletedFile: TAbstractFile, settings: MultipleNotesOutlineSettings){
+    let deleted = false;
+    for (let srcFilePath in settings.relatedFiles){
+
+        for (let dstFilePath in settings.relatedFiles[srcFilePath]){
+            if (dstFilePath == deletedFile.path){
+                delete settings.relatedFiles[srcFilePath][dstFilePath];
+                deleted = true;
+            }
+        }
+
+        if (srcFilePath == deletedFile.path){
+            delete settings.relatedFiles[srcFilePath];
+            deleted = true;
+        }
+    }
+    return deleted;
 }
 
 // テーマ（ライト/ダーク）を取得
@@ -139,5 +182,109 @@ export function sortFileOrder( order: number[], files: TAbstractFile[], status: 
 
         default:
             break;
+    }
+}
+
+
+// related Files全消去
+export class ModalConfirm extends Modal {
+	plugin: MultipleNotesOutlinePlugin;
+	scope: Scope;
+    instruction: string;
+
+	onSubmit: () => void;
+
+	constructor(app: App, plugin: MultipleNotesOutlinePlugin, instruction: string, onSubmit: () => void) {
+		super(app);
+		this.plugin = plugin;
+        this.instruction = instruction;
+		this.onSubmit = onSubmit;
+	}
+
+	onOpen() {
+
+		const { contentEl } = this;
+		contentEl.createEl("br");
+        contentEl.createEl("p",{
+            text: this.instruction
+        })
+
+		new Setting(contentEl)
+			.addButton((btn) =>
+				btn
+					.setButtonText("Execute")
+                    .setCta()
+					.onClick(
+						async () => {
+					    	this.execute();
+						}
+					))
+			.addButton((btn) =>
+				btn
+					.setButtonText("Cancel")
+					.onClick(() => {
+						this.close();
+					}));
+	}
+
+	onClose() {
+		let { contentEl } = this;
+		contentEl.empty();
+	}
+
+	async execute():Promise<void>{
+		this.close();
+        this.onSubmit();
+	}
+}
+
+// 存在しないrelatedFilesのパスをクリーンアップ
+export function checkRelatedFiles(app:App, settings: MultipleNotesOutlineSettings):void{
+    for (let srcFilePath in settings.relatedFiles){
+        for (let dstFilePath in settings.relatedFiles[srcFilePath]){
+            //対象パスのファイル/フォルダが存在しなければ削除
+            if (!app.vault.getAbstractFileByPath(dstFilePath)){
+                delete settings.relatedFiles[srcFilePath][dstFilePath];
+                if(Object.keys(settings.relatedFiles[srcFilePath]).length === 0){
+                    delete settings.relatedFiles[srcFilePath];
+                }
+            }
+        }
+        // 元パスのファイル/フォルダが存在しなければ削除
+        if (!app.vault.getAbstractFileByPath(srcFilePath)){
+            delete settings.relatedFiles[srcFilePath];
+        } 
+    }
+}
+
+
+// subpathを含むリンクのリンク先のpositionを取得
+export function getSubpathPosition (app:App, file:TFile, subpath:string):Pos|null{
+    const cache = app.metadataCache.getFileCache(file);
+    if (!cache) {
+        return null;
+    }
+    const checkpath = subpath.replace(/[#^]/g,'');
+    if (cache.headings?.length){
+        const index = cache.headings.findIndex((element) => element.heading.replace(/[#^]/g,'') == checkpath);
+        if (index >= 0){
+            return cache.headings[index].position;
+        }
+    }
+    if (cache.sections?.length){
+        const index = cache.sections.findIndex((element) => element.id?.replace(/[#^]/g,'') == checkpath);
+        if (index >= 0){
+            return cache.sections[index].position;
+        }
+    }
+    return null;
+}
+
+// dataviewのチェック
+export function checkDataview (app: App):boolean {
+    if (app.plugins.plugins['dataview']){
+        return true;
+    } else {
+        return false;
     }
 }
