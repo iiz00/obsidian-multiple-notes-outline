@@ -4,6 +4,7 @@ import { MultipleNotesOutlineView, MultipleNotesOutlineViewType } from 'src/file
 import { MultipleNotesOutlineSettingTab } from 'src/setting'
 
 import { MultipleNotesOutlineFolderView, MultipleNotesOutlineFolderViewType} from 'src/folderView';
+import { ModalConfirm } from './util';
 
 // 設定項目 
 export interface MultipleNotesOutlineSettings {
@@ -143,6 +144,19 @@ export interface MultipleNotesOutlineSettings {
 	collapseAllAtStartup: boolean;
 
 	showPropertyLinks: boolean;
+
+	recent: {
+		file: string[];
+		folder: string[];
+	};
+	favorite: {
+		file: string[];
+		folder: string[];
+	}
+
+	numOfRecentFiles: number;
+	pinAfterJump: boolean;  // fileViewにおいて履歴/お気に入りを開いたときにピンを付加するかどうか
+
 } 
 
 // 設定項目デフォルト
@@ -270,6 +284,18 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 	collapseAllAtStartup: false,
 
 	showPropertyLinks: true,
+
+	recent: {
+		file: [],
+		folder:[]
+	},
+	favorite: {
+		file:[],
+		folder:[]
+	},
+
+	numOfRecentFiles: 30,
+	pinAfterJump: true,
 }
 
 
@@ -353,7 +379,6 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 		);
 	
 		//コマンド追加
-		// Open Outline: アウトライン表示用のカスタムビューを開く
 		this.addCommand({
 			id: 'open-file-view',
 			name: 'Open File View',
@@ -370,24 +395,48 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 				this.checkFolderView(true);
 			}
 		});
-	
-	// viewの更新(アップデート時用)
-	// if (this.app.workspace.layoutReady){
-	// 	this.checkAllView();		
-	// } else {
-	// 	this.registerEvent(this.app.workspace.on('layout-ready', this.checkAllView));
-	// }
-	this.app.workspace.onLayoutReady(async()=>{
-		if (this.settings.openAtStartup.file){
-			this.checkFileView(false);
-		}
-		if (this.settings.openAtStartup.folder){
-			this.checkFolderView(false);
-		}
-	});
 
-	// This adds a settings tab so the user can configure various aspects of the plugin
-	this.addSettingTab(new MultipleNotesOutlineSettingTab(this.app, this));
+		this.addCommand({
+			id: 'erase-all-fold-AOT-information',
+			name: 'Erase all folding/always-on-top information',
+			callback: async()=>{
+				const onSubmit = async()=>{
+					this.settings.relatedFiles ={};
+					await this.saveSettings();
+				}
+				new ModalConfirm(this.app, this, 'Are you sure you want to erase all folding/always-on-top information?', onSubmit).open();
+			}
+		});
+		this.addCommand({
+			id: 'erase-non-favorite-fold-AOT-information',
+			name: 'Erase folding/always-on-top information except favorite files/folders',
+			callback: async()=>{
+				const onSubmit = async()=>{
+					for (let srcFilePath in this.settings.relatedFiles){
+						if(!this.settings.favorite.file.includes(srcFilePath) && !this.settings.favorite.folder.includes(srcFilePath)){
+							delete this.settings.relatedFiles[srcFilePath];
+						} else{
+						}
+					}
+					await this.saveSettings();
+				}
+				new ModalConfirm(this.app, this, 'Are you sure you want to erase folding/always-on-top information of not favorite files/folders?', onSubmit).open();
+			}
+		});
+	
+		// viewの更新(アップデート時用)
+
+		this.app.workspace.onLayoutReady(async()=>{
+			if (this.settings.openAtStartup.file){
+				this.checkFileView(false);
+			}
+			if (this.settings.openAtStartup.folder){
+				this.checkFolderView(false);
+			}
+		});
+
+		// This adds a settings tab so the user can configure various aspects of the plugin
+		this.addSettingTab(new MultipleNotesOutlineSettingTab(this.app, this));
 
 	}
 

@@ -472,6 +472,44 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                 }
             });
         
+
+        // Recent/favorite
+        this.containerEl.createEl("h4", {
+            text: "Recent/favorites",
+            cls: 'setting-category'
+        });
+        
+        new Setting(containerEl)
+        .setName("Number of recent files/folders to be stored")
+        .addText((text) => {
+            text.inputEl.setAttr('type','number');
+            text
+                .setPlaceholder(String(DEFAULT_SETTINGS.numOfRecentFiles))
+                .setValue(String(this.plugin.settings.numOfRecentFiles))
+
+            text.inputEl.onblur = async (e: FocusEvent) => {
+                let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                if (parsed <= 0){
+                    parsed = DEFAULT_SETTINGS.numOfRecentFiles;
+                }
+                this.plugin.settings.numOfRecentFiles = parsed;
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+        .setName("Auto pin")
+        .setDesc("When File View is updated from recent/favorite files, automatically pin the view.")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.pinAfterJump)
+                .onChange(async (value) => {
+                    this.plugin.settings.pinAfterJump = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+        });
+
         // フィルター
         /*  filter関連コメントアウト
         this.containerEl.createEl("h4", {
