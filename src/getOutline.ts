@@ -27,22 +27,29 @@ export function initFileStatus(files: TAbstractFile[]): FileStatus[] {
 // 単一ファイルの情報取得
 export async function getFileInfo(app: App, file: TFile, settings:MultipleNotesOutlineSettings, forceGetBacklinks: boolean = false, isDataviewEnabled:boolean): Promise<FileInfo> {
 
-
-    const content = await this.app.vault.cachedRead(file);
-
-    const lines = content.split("\n");
-
-    const backlinkFiles = (settings.showBacklinks || forceGetBacklinks) ? getBacklinkFilesDataview( app, file, isDataviewEnabled): undefined;
-
-    const info:FileInfo = {
-        lines: lines,
-        numOfLines: lines.length,
-        backlinks: backlinkFiles,
-        frontmatterLinks: undefined
+    if (file.extension == 'md'){
+        const content = await this.app.vault.cachedRead(file);
+        const lines = content.split("\n");
+        const backlinkFiles = (settings.showBacklinks || forceGetBacklinks) ? getBacklinkFilesDataview( app, file, isDataviewEnabled): undefined;
+        const info:FileInfo = {
+            lines: lines,
+            numOfLines: lines.length,
+            backlinks: backlinkFiles,
+            frontmatterLinks: undefined
+        }
+        return info;
+    } else {
+        // .md 以外
+        const backlinkFiles = (settings.showBacklinks || forceGetBacklinks) ? getBacklinkFilesDataview( app, file, isDataviewEnabled): undefined;
+        const info: FileInfo = {
+            lines: [""],
+            numOfLines: 0,
+            backlinks: backlinkFiles,
+            frontmatterLinks: undefined
+        }
+        return info;
     }
-
-
-    return info;
+    
 }
 
 // 単一ファイルのアウトライン取得
@@ -51,13 +58,17 @@ export async function getOutline (app: App, file: TFile, status:FileStatus, info
     let data: OutlineData[] = [];
     const cache = app.metadataCache.getFileCache(file);
 
+    // .md以外は空アウトラインを返す
+    if(file.extension != 'md'){
+        return data;
+    }
     // cacheはnullの場合がある
     if (!cache){
         return null;
     }
     // properties(frontmatter)からリンクを取得
     info.frontmatterLinks = cache?.frontmatterLinks;
-    
+
     // headings,links,tags を抽出
 
     // console.log('check headings',cache.hasOwnProperty("headings") );

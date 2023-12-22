@@ -231,6 +231,20 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     })
         });
 
+        new Setting(containerEl)
+            .setName("Open last view at startup")
+            .setDesc("If enabled, the most recently opened view is opened when File View is launched.")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.openRecentAtStartup.file)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRecentAtStartup.file = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.callRefreshView(false);
+                    })
+        });
+
         // 各カテゴリの表示/非表示
         new Setting(containerEl)
             .setName("Show the main target file section")
@@ -353,6 +367,20 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     })
         });
 
+        new Setting(containerEl)
+            .setName("Open last view at startup")
+            .setDesc("If enabled, the most recently opened view is opened when Folder View is launched.")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.openRecentAtStartup.folder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRecentAtStartup.folder = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.callRefreshView(false);
+                    })
+        });
+
         // 各カテゴリの表示/非表示
         new Setting(containerEl)
             .setName("Collapse subfolder")
@@ -399,6 +427,24 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                 cls:"setting-item-description",
             });
         }
+        //リンク
+        this.containerEl.createEl("h4", {
+            text: "Links",
+            cls:"setting-category",
+        });
+        new Setting(containerEl)
+        .setName("Open link by clicking link element")
+        .setDesc("If enabled, clicking on a link element opens the linked file instead of opening the element's position.")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.openLinkByClick)
+                .onChange(async (value) => {
+                    this.plugin.settings.openLinkByClick = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+        });
+
 
         // プレビュー
         this.containerEl.createEl("h4", {
@@ -453,6 +499,64 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     })
             });
         }
+        // Popout Window
+        this.containerEl.createEl("h4", {
+            text: "Popout window",
+            cls: 'setting-category'
+        });
+        this.containerEl.createEl("p", {
+            text: "Popout window size",
+            cls: 'setting-category'
+        });
+        new Setting(containerEl)
+            .setName("Width")
+            .setDesc("default & min = 600")
+            .addText((text) => {
+                text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.popoutSize.width))
+                        .setValue(String(this.plugin.settings.popoutSize.width))
+
+            text.inputEl.onblur = async (e: FocusEvent) => {
+                let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                if (parsed <= 600){
+                    parsed = DEFAULT_SETTINGS.popoutSize.width;
+                }
+                this.plugin.settings.popoutSize.width = parsed;
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+            .setName("Height")
+            .setDesc("default = 800 min = 600")
+            .addText((text) => {
+                text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.popoutSize.height))
+                        .setValue(String(this.plugin.settings.popoutSize.height))
+
+            text.inputEl.onblur = async (e: FocusEvent) => {
+                let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                if (parsed <= 600){
+                    parsed = DEFAULT_SETTINGS.popoutSize.height;
+                }
+                this.plugin.settings.popoutSize.height = parsed;
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+            .setName("Set popout window always on top")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.popoutAlwaysOnTop)
+                    .onChange(async (value) => {
+                        this.plugin.settings.popoutAlwaysOnTop = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                    })
+        });
 
         // Always on Top
         this.containerEl.createEl("h4", {
@@ -852,10 +956,10 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     .addOption("custom","custom")
                     .setValue(this.plugin.settings.icon.heading)
                     .onChange(async (value) => {
-                      this.plugin.settings.icon.heading = value;
-                      this.display();
-                      await this.plugin.saveSettings();
-                      this.callRefreshView(false);
+                        this.plugin.settings.icon.heading = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.callRefreshView(false);
                     })
             });
 

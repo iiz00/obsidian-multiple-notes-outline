@@ -157,6 +157,20 @@ export interface MultipleNotesOutlineSettings {
 	numOfRecentFiles: number;
 	pinAfterJump: boolean;  // fileViewにおいて履歴/お気に入りを開いたときにピンを付加するかどうか
 
+	openRecentAtStartup: {
+		file: boolean;
+		folder: boolean;
+	}
+
+	popoutSize: {
+		width: number;
+		height: number;
+	}
+
+	popoutAlwaysOnTop: boolean;
+
+	openLinkByClick: boolean;
+
 } 
 
 // 設定項目デフォルト
@@ -296,6 +310,20 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 
 	numOfRecentFiles: 30,
 	pinAfterJump: true,
+
+	openRecentAtStartup: {
+		file: false,
+		folder: false,
+	},
+
+	popoutSize: {
+		width: 600,
+		height: 800
+	},
+	popoutAlwaysOnTop: false,
+
+	openLinkByClick: false,
+	
 }
 
 

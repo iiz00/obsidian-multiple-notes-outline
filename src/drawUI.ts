@@ -2,7 +2,7 @@ import { MultipleNotesOutlineView } from "./fileView";
 import { MultipleNotesOutlineFolderView } from "./folderView";
 import MultipleNotesOutlinePlugin from "./main";
 
-import { setIcon, TFile, Menu, TFolder } from 'obsidian';
+import { setIcon, TFile, Menu, TFolder, Notice } from 'obsidian';
 import { ModalJump, updateFavAndRecent } from "./FavAndRecent";
 
 // 操作アイコン部分を描画
@@ -142,13 +142,11 @@ function uiUpdateFolderView (parentEl:HTMLElement):void{
                 this.hasMainChanged = true;
 
                 updateFavAndRecent.call(this, this.targetFolder.path,'folder','recent');
-                
 
                 // 保留
                 // this.app.workspace.requestSaveLayout();
 
                 this.refreshView(true, true);
-
             }
         }
     );

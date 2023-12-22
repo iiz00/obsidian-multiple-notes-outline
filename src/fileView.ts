@@ -159,7 +159,6 @@ export class MultipleNotesOutlineView extends ItemView {
 		// } else {
 		// 	await this.initView();
 		// }
-		
 	}
 
 	async onClose(){
@@ -167,30 +166,45 @@ export class MultipleNotesOutlineView extends ItemView {
 	}
 
 	private async initView() {
-		await this.bootDelay(); 
+		await this.bootDelay();
 
 		checkRelatedFiles(this.app, this.settings);
 		checkFavAndRecentFiles(this.app, this.settings, this.viewType);
-		
+
 		this.collapseAll = this.settings.collapseAllAtStartup;
 
 		// ノートタイトル背景色の設定
 		this.theme = getTheme();
 		setNoteTitleBackgroundColor(this.theme, this.settings);
 
-
+		// 初期の表示対象ファイルを取得（アクティブファイルまたは最後に表示したファイル）
 		this.activeFile = this.app.workspace.getActiveFile();
 		if (this.activeFile){
-			this.targetFiles.main[0]= this.activeFile;
-			this.refreshView(true, true);
+			if (this.settings.openRecentAtStartup.file && this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof TFile){
+				this.targetFiles.main[0] = this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) as TFile;
+				if (this.settings.pinAfterJump && this.settings.autoupdateFileView){
+					this.pinnedMode = true;
+				}
+			} else {
+				this.targetFiles.main[0]= this.activeFile;
+			}
 		} else {
-			console.log("Multiple Notes Outline: failed to get active file");
+			if (this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof TFile){
+				this.targetFiles.main[0] = this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) as TFile;
+				if (this.settings.pinAfterJump && this.settings.autoupdateFileView){
+					this.pinnedMode = true;
+				}
+			} else {
+				this.targetFiles.main[0] = null;
+			}
 		}
+		this.refreshView(true, true);
+
 
 		//自動更新のためのデータ変更、ファイル追加/削除の監視 observe file change/create/delete
 		const debouncerRequestRefresh:Debouncer<[]> = debounce(this.autoRefresh,3000,true);
 		this.flagChanged = false;
-		this.flagRegetTarget = false; 
+		this.flagRegetTarget = false;
 
 		this.registerEvent(this.app.workspace.on('file-open', (file) => {
 			if (file instanceof TFile && file !== this.activeFile){
@@ -273,7 +287,6 @@ export class MultipleNotesOutlineView extends ItemView {
 		}));
 
 		this.registerEvent(this.app.workspace.on('css-change', (e)=>{
-			
 			const newTheme = getTheme();
 			if (newTheme !== this.theme){
 				this.theme = newTheme;
@@ -373,7 +386,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.flagSaveSettings = false;
 	}
 
-	// リフレッシュセンター 
+	// リフレッシュセンター
 	// flagGetTargetがtrue: 対象ファイルを再取得
 	// flagGetOutlineがtrue: アウトライン情報を再取得
 	// その後UI部分とアウトライン部分を描画
@@ -381,7 +394,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		
 		// 描画所要時間を測定
 		const startTime = performance.now();
-	
+
 		//dataviewオンオフチェック
 		this.isDataviewEnabled = checkDataview(this.app);
 
@@ -390,9 +403,15 @@ export class MultipleNotesOutlineView extends ItemView {
 
 		const previousY = containerEl?.scrollTop ? containerEl.scrollTop : 0;
 
+		// メインターゲットが取得できていなければUIアイコンのみ描画
+		if (!this.targetFiles.main[0]){
+			drawUI.call(this);
+			return;
+		}
+
 		// メインターゲットファイルのfileInfoとoutlineを取得
 		this.filecount = 0;
-		if (flagGetTarget){
+		if (this.targetFiles.main[0] && flagGetTarget){
 
 			this.fileStatus.main = initFileStatus(this.targetFiles.main);
 			this.fileOrder.main = [...Array(this.targetFiles.main.length)].map((_, i) => i);
@@ -403,7 +422,7 @@ export class MultipleNotesOutlineView extends ItemView {
 			this.fileStatus.outgoing = initFileStatus(this.targetFiles.outgoing);
 			this.fileOrder.outgoing = [...Array(this.targetFiles.outgoing.length)].map((_, i) => i);
 
-			this.targetFiles.backlink = this.fileInfo.main[0].backlinks;
+			this.targetFiles.backlink = this.fileInfo.main[0]?.backlinks;
 			this.fileStatus.backlink = initFileStatus(this.targetFiles.backlink);
 			this.fileOrder.backlink = [...Array(this.targetFiles.backlink.length)].map((_, i) => i);
 
@@ -426,7 +445,7 @@ export class MultipleNotesOutlineView extends ItemView {
 
 		const midTime = performance.now();
 		if (this.settings.showDebugInfo){
-		 	console.log('Multiple Notes Outline: time required to get outlines, file view: ',this.targetFiles.main[0].path, midTime - startTime);
+			console.log('Multiple Notes Outline: time required to get outlines, file view: ',this.targetFiles.main[0].path, midTime - startTime);
 		}
 
 		drawUI.call(this);
@@ -435,9 +454,9 @@ export class MultipleNotesOutlineView extends ItemView {
 		// 描画所要時間を測定
 		const endTime = performance.now();
 		if (this.settings.showDebugInfo){
-		 	console.log('Multiple Notes Outline: time required to draw outlines, file view: ',this.targetFiles.main[0].path, endTime - midTime, previousY);
+			console.log('Multiple Notes Outline: time required to draw outlines, file view: ',this.targetFiles.main[0].path, endTime - midTime, previousY);
 
-		 	console.log('Multiple Notes Outline: time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
+			console.log('Multiple Notes Outline: time required to refresh view, file view',this.targetFiles.main[0].path, endTime - startTime);
 		}
 	}
 
@@ -451,7 +470,7 @@ export class MultipleNotesOutlineView extends ItemView {
 				status[i].isTop =true;
 			}
 
-			if ((this.filecount < this.settings.readLimit || status[i].isTop ) && !Object.values(status[i].duplicated).includes(true)){
+			if ( (this.filecount < this.settings.readLimit || status[i].isTop ) && !Object.values(status[i].duplicated).includes(true)){
 				// files.length ==1 の場合、メインターゲットファイルを対象にしている可能性があるため、必ずbacklink filesを取得する。
 				const info = await getFileInfo(this.app, files[i], this.settings, Boolean( files.length == 1), this.isDataviewEnabled);
 				fileInfo.push(info);
@@ -511,7 +530,7 @@ export class MultipleNotesOutlineView extends ItemView {
 			this.constructCategoryDOM('backlink', 'links-coming-in', 'Backlink Files', rootChildrenEl, categoryAOTEl);
 		}
 		
-		// アウトライン部分の描画実行
+		// アウトライン部分の描画実行 
 		this.contentEl.appendChild(containerEl);
 
 		// スクロール位置を復元
@@ -554,7 +573,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		if (!this.collapseCategory[category]){
 
 			constructNoteDOM.call(this, this.targetFiles[category], this.fileStatus[category], this.fileInfo[category], this.outlineData[category],
-				 categoryChildrenEl, category, aotEl, this.targetFiles.main[0],this.fileOrder[category]);
+				categoryChildrenEl, category, aotEl, this.targetFiles.main[0],this.fileOrder[category]);
 		} else {
 			categoryEl.classList.add('is-collapsed');
 			categoryCollapseIcon.classList.add('is-collapsed');

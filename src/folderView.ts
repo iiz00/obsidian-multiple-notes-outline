@@ -1,4 +1,4 @@
-import { setIcon, debounce, Debouncer, Menu, TFolder} from 'obsidian';
+import { setIcon, debounce, Debouncer, Menu, TFolder, Notice} from 'obsidian';
 
 import { ItemView, WorkspaceLeaf, TFile, TAbstractFile} from 'obsidian'
 
@@ -90,20 +90,19 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		this.plugin = plugin;
 		this.settings = settings;
 	}
-  
+
 	getViewType(): string {
 		return MultipleNotesOutlineFolderViewType;
 	}
-  
+
 	getDisplayText(): string {
 		return 'MNO - folder view';
 	}
-  
+
 	getIcon(): string {
 		return 'folders';
 	}
 
-	
 	async onOpen(){
 		await this.initView();
 
@@ -129,8 +128,8 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	}
 
 	private async initView() {
-		await this.bootDelay(); 
-		
+		await this.bootDelay();
+
 		checkRelatedFiles(this.app, this.settings);
 		checkFavAndRecentFiles(this.app, this.settings, this.viewType);
 
@@ -139,23 +138,30 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		// ノートタイトル背景色の設定
 		this.theme = getTheme();
 		setNoteTitleBackgroundColor(this.theme, this.settings);
-		
-		if (this.targetFolder){
-			this.refreshView(true, true);
-		} else {
-			this.activeFile = this.app.workspace.getActiveFile();
-			if (this.activeFile){
-				this.targetFolder = this.activeFile.parent;
-				this.refreshView(true,true);
+
+		// 初期の表示対象フォルダを取得（アクティブファイルのフォルダまたは最後に表示したフォルダ）
+		this.activeFile = this.app.workspace.getActiveFile();
+		if (this.activeFile){
+			if (this.settings.openRecentAtStartup.folder && this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof TFolder){
+				this.targetFolder = this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) as TFolder;
 			} else {
-			console.log("Multiple Notes Outline: failed to get active file");
+				this.targetFolder = this.activeFile.parent;
+			}
+		} else {
+			if (this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof TFolder){
+				this.targetFolder = this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) as TFolder;
+			} else {
+				this.targetFolder = null;
 			}
 		}
+
+		this.refreshView(true,true);
+
 
 		//自動更新のためのデータ変更、ファイル追加/削除の監視 observe file change/create/delete
 		const debouncerRequestRefresh:Debouncer<[]> = debounce(this.autoRefresh,3000,true);
 		this.flagChanged = false;
-		this.flagRegetTarget = false; 
+		this.flagRegetTarget = false;
 
 		//今後アクティブファイルに色づけする場合などは処理を追加
 		// this.registerEvent(this.app.workspace.on('file-open', (file) => {
@@ -281,7 +287,14 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		const containerEl = document.getElementById('MNOfolderview-listcontainer');
 
 		const previousY = containerEl?.scrollTop ? containerEl.scrollTop : 0;
+		// new Notice('scroll done');
 
+
+		//ターゲットフォルダが取得できていなければUIアイコンのみ描画
+		if (!this.targetFolder){
+			drawUIFolderView.call(this);
+			return;
+		}
 		// フォルダに含まれるファイルを取得
 		this.filecount = 0;
 		if (flagGetTarget){
@@ -293,17 +306,16 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 		const midTime = performance.now();
 		if (this.settings.showDebugInfo){
-		 	console.log ('Multiple Notes Outline: time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
+			console.log ('Multiple Notes Outline: time required to get outlines, folder view: ',this.targetFolder.path, midTime - startTime);
 		}
-
 		drawUIFolderView.call(this);
 		this.drawOutline(previousY);
 
 		// 描画所要時間を測定
 		const endTime = performance.now();
 		if (this.settings.showDebugInfo){
-		 	console.log ('Multiple Notes Outline: time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
-		 	console.log ('Multiple Notes Outline: time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
+			console.log ('Multiple Notes Outline: time required to draw outlines, folder view: ',this.targetFolder.path, endTime - midTime);
+			console.log ('Multiple Notes Outline: time required to refresh view, folder view: ',this.targetFolder.path, endTime - startTime);
 		}
 	}
 
@@ -329,12 +341,11 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		let fileInfo:FileInfo[] = [];
 		let outlineData: OutlineData[][] = [];
 		for (let i = 0; i < files.length; i++){
-
 			//個別のAlways on Topの判定
 			if (checkFlag(this.targetFolder, files[i], 'top', this.settings) == true){
 				status[i].isTop =true;
 			}
-
+			//new Notice(`checkFlagいけた ${i} ${status[i].isFolder}`);
 			if (status[i].isFolder){
 				// フォルダーなら新たにそのフォルダーを処理
 				fileInfo.push(undefined);
@@ -342,10 +353,10 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 				if (!this.settings.collapseFolder){
 					await this.processFolder(files[i] as TFolder);
 					status[i].outlineReady = true;
-				}				
+				}
 			} else {
 				// ファイルなら情報を取得
-				if ((this.filecount < this.settings.readLimit || status[i].isTop )){
+				if (this.filecount < this.settings.readLimit || status[i].isTop ){
 					const info = await getFileInfo(this.app, files[i] as TFile, this.settings, false, this.isDataviewEnabled);
 					fileInfo.push(info);
 
@@ -356,7 +367,6 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 					} else {
 						outlineData.push(undefined);
 					}
-					
 				} else {
 					fileInfo.push(undefined);
 					outlineData.push(undefined);

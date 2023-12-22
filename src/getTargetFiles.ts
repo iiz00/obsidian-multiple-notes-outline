@@ -4,14 +4,14 @@ import { FileInfo, OutlineData } from 'src/main';
 export function getOutgoingLinkFiles(app: App, file:TFile, info:FileInfo, cache:OutlineData[]):TFile[] | null {
 
     let files:TFile[] =[];
-    for (let i=0; i< info.frontmatterLinks?.length; i++){
+    for (let i=0; i< info?.frontmatterLinks?.length; i++){
         const fileobj = app.metadataCache.getFirstLinkpathDest(info.frontmatterLinks[i].link, file.path);
         if (fileobj instanceof TFile){
             files.push(fileobj);
         }
     }
 
-    for (let i = 0; i< cache.length; i++ ){
+    for (let i = 0; i< cache?.length; i++ ){
         if (cache[i].typeOfElement != 'link'){
             continue;
         }

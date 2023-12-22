@@ -82,6 +82,14 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
+- 0.4.0
+	- Improvements
+		- You can now choose whether to open the location of the element or the linked file when you click on a link element.
+		- The context menu of the link element now allows you to open the linked file in a new tab/new pane/new window.
+		- You can now choose whether to open the view of the active file at startup or the view that was open when you last closed the app.
+		- You can now set the size of the pop-out window and whether it should be displayed in the foreground(always on top).
+	- Fixed
+		- Fixed an issue where non-markdown files would fail to display on iOS.
 - 0.3.0
 	- New functions
 		- Recent/Favorites
