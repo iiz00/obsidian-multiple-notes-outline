@@ -16,15 +16,18 @@ export async function updateFavAndRecent(targetPath: string, category: 'file'|'f
             this.settings.recent[category].pop();
         }
     }
-    await this.plugin.saveSettings();
+    if (this.settings.saveRecentView || this.suggestType =='favorite'){
+        await this.plugin.saveSettings();
+    }
 }
 
 export async function deleteFavAndRecent(targetPath: string, category: 'file'|'folder', suggestType: 'recent'|'favorite'):Promise<void> {
     this.settings[suggestType][category] = this.settings[suggestType][category].filter(
         (value: string) => targetPath !== value
     );
-
-    await this.plugin.saveSettings();
+    if (this.settings.saveRecentView || this.suggestType =='favorite'){
+        await this.plugin.saveSettings();
+    }
 }
 
 export class ModalJump extends SuggestModal<string>{
@@ -89,7 +92,9 @@ export class ModalJump extends SuggestModal<string>{
 
     async onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {
         updateFavAndRecent.call(this.view, item, this.category, this.suggestType);
-        await this.view.plugin.saveSettings();
+        if (this.view.settings.saveRecentView || this.suggestType == 'favorite'){
+            await this.view.plugin.saveSettings();
+        }
 		this.onSubmit(item);
 
     }

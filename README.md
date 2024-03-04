@@ -82,6 +82,21 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
+- 0.5.0
+	- New function
+		- Canvas support
+			- When a canvas file is selected,  notes in the canvas file are displayed as link elements and cards are displayed as list itmes in the outline. So when a canvas file is selected as the main target file in File view, the outlines of notes in the canvas file can also be displayed at once.
+		- Support for List Callouts plugin
+			- List items marked by List Callouts plugin by @mgmeyers are displayed with coloring.
+	- Improvements
+		- Increased the maximum width of tooltip preview
+		- Embedded links are now treated as link outline elements
+		- Added setting to hide outgoing links in outgoing link files section and backlinks in backlink files section (Settings -> File View -> Hide minor 2 hop links)
+		- You can now specify whether to save the history sequentially (Settings -> Recent/favorites -> Save recent view).
+			- Turning this off may cause some history to be lost when Obsidian exits, but will reduce the frequency of data.json rewrites.
+		- View history is now synchronized across devices. This requires Obsidian v1.5.8 or later.
+	- Changed
+		- Setting changes made by clicking UI icons (headings, links, list items, and backlinks) are now not saved sequentially. This reduces the frequency of data.json rewriting, although some of the history of these changes may be lost when Obsidian exits. If you switch settings from the settings screen, the settings are saved each time.
 - 0.4.0
 	- Improvements
 		- You can now choose whether to open the location of the element or the linked file when you click on a link element.

@@ -171,6 +171,9 @@ export interface MultipleNotesOutlineSettings {
 
 	openLinkByClick: boolean;
 
+	hideMinor2hopLink: boolean;
+	dispListCallouts: boolean;
+	saveRecentView: boolean;
 } 
 
 // 設定項目デフォルト
@@ -324,6 +327,10 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 
 	openLinkByClick: false,
 	
+	hideMinor2hopLink: false,
+	dispListCallouts: true,
+
+	saveRecentView: true,
 }
 
 
@@ -385,6 +392,40 @@ export const FILE_TITLE_BACKGROUND_COLOR_HOVER = {
 	}
 }
 
+export const LIST_CALLOUT_DEFAULT =
+[
+	{
+		color: "255, 214, 0",
+    "char": "&"
+  },
+  {
+    "color": "255, 145, 0",
+    "char": "?"
+  },
+  {
+    "color": "255, 23, 68",
+    "char": "!",
+    "icon": "lucide-alert-circle"
+  },
+  {
+    "color": "124, 77, 255",
+    "char": "~",
+    "icon": "lucide-crosshair"
+  },
+  {
+    "color": "0, 184, 212",
+    "char": "@"
+  },
+  {
+    "color": "0, 200, 83",
+    "char": "$"
+  },
+  {
+    "color": "158, 158, 158",
+    "char": "%"
+  }
+]
+
 export default class MultipleNotesOutlinePlugin extends Plugin {
 
 	settings: MultipleNotesOutlineSettings;
@@ -398,7 +439,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 		//register custome view according to Devloper Docs
 		this.registerView(
 			MultipleNotesOutlineViewType,
-			(leaf) => (this.view =new MultipleNotesOutlineView(leaf, this, this.settings))
+			(leaf) => (this.view = new MultipleNotesOutlineView(leaf, this, this.settings))
 		);
 
 		this.registerView(
@@ -478,6 +519,12 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	async onExternalSettingsChange() {
+		await this.loadSettings();
+		this.view.updateSettings();
+		this.folderview.updateSettings();
 	}
 
 	checkFileView = async(activateView: boolean):Promise<void> => {

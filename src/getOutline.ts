@@ -1,4 +1,4 @@
-import { App, TAbstractFile, TFile, TFolder} from 'obsidian';
+import { App, CachedMetadata, TAbstractFile, TFile, TFolder} from 'obsidian';
 import MultipleNotesOutlinePlugin, { FileInfo, FileStatus, MultipleNotesOutlineSettings, OutlineData} from 'src/main';
 import { getBacklinkFiles, getBacklinkFilesDataview } from 'src/getTargetFiles';
 
@@ -49,7 +49,6 @@ export async function getFileInfo(app: App, file: TFile, settings:MultipleNotesO
         }
         return info;
     }
-    
 }
 
 // 単一ファイルのアウトライン取得
@@ -58,6 +57,10 @@ export async function getOutline (app: App, file: TFile, status:FileStatus, info
     let data: OutlineData[] = [];
     const cache = app.metadataCache.getFileCache(file);
 
+    // canvasは独自のアウトラインを返す
+    if(file.extension == 'canvas'){
+        return await getCanvasOutline(app, file);
+    }
     // .md以外は空アウトラインを返す
     if(file.extension != 'md'){
         return data;
@@ -99,6 +102,22 @@ export async function getOutline (app: App, file: TFile, status:FileStatus, info
             };
             data.push(element);
         }				
+    }
+    //embedsに対応
+    if (cache.hasOwnProperty("embeds")){
+        for (let j=0; j< cache.embeds.length ; j++){
+            const element:OutlineData = {
+                typeOfElement : "link",
+                position : cache.embeds[j].position,
+                //マークダウンリンク に対応
+                displayText : 
+                    (cache.embeds[j].displayText =="") 
+                    ? cache.embeds[j].original.substring(1,cache.embeds[j].original.indexOf("]")) 
+                    : cache.embeds[j].displayText,
+                link: cache.embeds[j].link
+            };
+            data.push(element);
+        }
     }
     
     // console.log('check lists');
@@ -152,6 +171,45 @@ export async function getOutline (app: App, file: TFile, status:FileStatus, info
     // 要素の登場順にソート
     data.sort((a,b)=> {
         return (a.position.start.offset - b.position.start.offset);
+    });
+    return data;
+}
+
+// canvasについて、ノートをリンクとして、カードをリスト項目としてアウトラインを構成
+async function getCanvasOutline(app: App, file: TFile): Promise<OutlineData[]>{
+    let data: OutlineData[] = [];
+    const canvas = await app.vault.read(file);
+    const canvasData = JSON.parse(canvas);
+    if (!canvasData?.nodes){
+        return data;
+    }
+    for (const node of canvasData.nodes){
+        if (node.type == "file"){
+            const element:OutlineData = {
+                typeOfElement : "link",
+                position : undefined,
+                displayText : app.vault.getAbstractFileByPath(node.file).name,
+                link : app.vault.getAbstractFileByPath(node.file).name
+            }
+            data.push(element);
+        }
+        if (node.type == "text"){
+            const element:OutlineData = {
+                typeOfElement: "listItems",
+                position: undefined,
+                displayText : node.text,
+                level: 0,
+                task : undefined
+            }
+            data.push(element);
+        }
+
+    }
+    data.sort((a,b)=>{
+        if (a.typeOfElement != b.typeOfElement){
+            return a.typeOfElement == 'link' ? -1: 1;
+        }
+        return (a.displayText < b.displayText ? -1: 1);
     });
     return data;
 }

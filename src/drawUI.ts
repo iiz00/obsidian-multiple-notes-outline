@@ -409,7 +409,7 @@ function uiToggleHeading (parentEl:HTMLElement):void{
         "click",
         async (event:MouseEvent) =>{
             this.settings.showElements.heading = !this.settings.showElements.heading;
-            await this.plugin.saveSettings();
+            // await this.plugin.saveSettings();
             this.refreshView(false,false);
         }
     );
@@ -454,7 +454,7 @@ function uiToggleLink (parentEl:HTMLElement):void{
         "click",
         async (event:MouseEvent) =>{
             this.settings.showElements.link = !this.settings.showElements.link;
-            await this.plugin.saveSettings();
+            // await this.plugin.saveSettings();
             this.refreshView(false,false);
         }
     );
@@ -471,7 +471,7 @@ function uiToggleListItems (parentEl:HTMLElement):void{
         "click",
         async (event:MouseEvent) =>{
             this.settings.showElements.listItems = !this.settings.showElements.listItems;
-            await this.plugin.saveSettings();
+            // await this.plugin.saveSettings();
             this.refreshView(false,false);
         }
     );
@@ -489,7 +489,7 @@ function uiToggleBacklinks (parentEl:HTMLElement):void{
         "click",
         async (event:MouseEvent) =>{
             this.settings.showBacklinks = !this.settings.showBacklinks;
-            await this.plugin.saveSettings();
+            // await this.plugin.saveSettings();
             this.refreshView(false,false);
         }
     );

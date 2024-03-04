@@ -288,3 +288,39 @@ export function checkDataview (app: App):boolean {
         return false;
     }
 }
+
+
+// list calloutのチェック
+export function checkListCallouts (checkString: string, callouts){
+    if (!callouts) return null;
+    for (let i=0; i<callouts.length; i++){
+        if (checkString.startsWith(callouts[i].char+" ")){
+            return i;
+        }
+    }
+    return null;
+}
+
+// list itemを描画するか判定
+export function shouldDisplayListItem (data, settings, calloutsIndex):boolean {
+    // 完了タスク非表示設定であれば完了タスクはスキップ
+    if (settings.hideCompletedTasks == true && data.task =='x'){
+        return false;
+    // 非タスク非表示設定であれば非タスクはスキップ
+    }
+    if (settings.taskOnly == true && data.task === void 0){
+        return false;
+    }
+    // 全タスク表示設定でタスクなら表示
+    if (settings.allTasks == true && data.task !== void 0){
+        return true;
+    }
+    if (settings.dispListCallouts == true && typeof calloutsIndex === 'number'){
+        return true;
+    }
+    // レベルに応じてスキップ
+    if ( (data.level == 2) || (data.level ==1 && settings.allRootItems == false)){
+            return false;
+    }
+    return true;
+}

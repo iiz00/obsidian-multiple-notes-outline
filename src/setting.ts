@@ -125,6 +125,21 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                             this.callRefreshView(false);
                         })
             });
+
+            new Setting(containerEl)
+                .setName("Show list callouts")
+                .setDesc("shows list items marked with List Callouts plugin")
+                .setClass('setting-indent')
+                .addToggle((toggle) => {
+                    toggle
+                        .setValue(this.plugin.settings.dispListCallouts)
+                        .onChange(async (value) => {
+                            this.plugin.settings.dispListCallouts = value;
+                            this.display();
+                            await this.plugin.saveSettings();
+                            this.callRefreshView(false);
+                        })
+            });
         }
 
         new Setting(containerEl)
@@ -345,6 +360,20 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     this.display();
                     await this.plugin.saveSettings();
                     this.callRefreshView(false);
+                    })
+            });
+
+        new Setting(containerEl)
+            .setName("Hide minor 2 hop links")
+            .setDesc("hides outgoing links in outgoing files section and backlinks in backlink files section.(default = off)")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.hideMinor2hopLink)
+                    .onChange(async (value) => {
+                        this.plugin.settings.hideMinor2hopLink = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.callRefreshView(false);
                     })
             });
         
@@ -613,6 +642,21 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
         });
+
+        new Setting(containerEl)
+        .setName("Save recent view")
+        .setDesc("If disabled, the history of views displayed will not be saved sequentially. History is sometimes lost, but the frequency of data.json rewriting and subsequent synchronization is reduced.")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.saveRecentView)
+                .onChange(async (value) => {
+                    this.plugin.settings.saveRecentView = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+        });
+
+
 
         // フィルター
         /*  filter関連コメントアウト
