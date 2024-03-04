@@ -123,6 +123,10 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	}
 
+	updateSettings(){
+		this.settings = this.plugin.settings;
+	}
+
 	async onClose(){
 		// Nothin to clean up
 	}

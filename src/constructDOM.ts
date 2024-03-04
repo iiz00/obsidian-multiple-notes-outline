@@ -3,7 +3,7 @@ import { TFile, setIcon, Menu, MarkdownView, App, TAbstractFile, TFolder, setToo
 import { OutlineData, FileInfo, FileStatus } from 'src/main';
 import { MultipleNotesOutlineViewType, Category } from './fileView';
 import { getFileInfo, getOutline } from 'src/getOutline';
-import { addFlag, checkFlag, cleanRelatedFiles, getSubpathPosition, removeFlag, toggleFlag } from 'src/util';
+import { addFlag, checkFlag, checkListCallouts, cleanRelatedFiles, getSubpathPosition, removeFlag, shouldDisplayListItem, toggleFlag } from 'src/util';
 import { deleteFavAndRecent, updateFavAndRecent } from './FavAndRecent';
 
 
@@ -338,8 +338,10 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 	// extract マッチする項目があったかどうか filter関連コメントアウト
 	// let isExtracted = false;
 
+	const isCanvas = Boolean(file.extension == 'canvas');
+
 	// propertiesの処理
-	if (this.settings.showPropertyLinks && info.frontmatterLinks){
+	if (this.settings.showPropertyLinks && info.frontmatterLinks && !(category =='outgoing' && this.settings.hideMinor2hopLink)){
 		frontmatterlinksloop: for (let j = 0; j < info.frontmatterLinks.length; j++){
 		
 			const linkTarget = this.app.metadataCache.getFirstLinkpathDest(parseLinktext(info.frontmatterLinks[j].link).path, file.path);
@@ -577,6 +579,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 
 			// 現アウトライン要素の種別を取得
 			const element = data[j].typeOfElement;
+			let displayText = data[j].displayText;
 			const linkTarget = (element !== 'link')? null : this.app.metadataCache.getFirstLinkpathDest(parseLinktext(data[j]?.link).path, file.path);
 			const linkSubpath = (!linkTarget)? undefined : parseLinktext(data[j]?.link).subpath;
 
@@ -690,6 +693,9 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 						}
 					}
 				}
+				if (this.settings.hideMinor2hopLink && category == 'outgoing'){
+					continue;
+				}
 			}
 
 			// tags
@@ -698,19 +704,26 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 
 
 			// listItems
+			let calloutsIndex = undefined;
 			if (element == 'listItems'){
-				// 完了タスク非表示設定であれば完了タスクはスキップ
-				if (this.settings.hideCompletedTasks == true && data[j].task =='x'){
-					continue;
-				// 非タスク非表示設定であれば非タスクはスキップ
-				} else if (this.settings.taskOnly == true && data[j].task === void 0){
-					continue;
-				// 非タスクの通常リストアイテム、または タスクは全表示の設定で無ければレベルに応じてスキップ
-				} else if (this.settings.allTasks == false || data[j].task === void 0){
-					if ( (data[j].level == 2) || (data[j].level ==1 && this.settings.allRootItems == false)){
-						continue;
-					}
+				if (this.settings.dispListCallouts){
+					calloutsIndex = checkListCallouts(displayText, this.app.plugins.plugins?.['obsidian-list-callouts']?.settings);
 				}
+				if (shouldDisplayListItem(data[j], this.settings, calloutsIndex) == false){
+					continue;
+				}
+				// // 完了タスク非表示設定であれば完了タスクはスキップ
+				// if (this.settings.hideCompletedTasks == true && data[j].task =='x'){
+				// 	continue;
+				// // 非タスク非表示設定であれば非タスクはスキップ
+				// } else if (this.settings.taskOnly == true && data[j].task === void 0){
+				// 	continue;
+				// // 非タスクの通常リストアイテム、または タスクは全表示の設定で無ければレベルに応じてスキップ
+				// } else if (this.settings.allTasks == false || data[j].task === void 0){
+				// 	if ( (data[j].level == 2) || (data[j].level ==1 && this.settings.allRootItems == false)){
+				// 		continue;
+				// 	}
+				// }
 			}
 
 
@@ -745,7 +758,30 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 						this.settings.customIcon.task : this.settings.icon.task);
 				}
 			}
-			
+
+			// リストに対する処理タスクだった場合アイコン上書き
+			if (element =='listItems'){
+				//タスクだった場合アイコン上書き
+				if (data[j].task !== void 0){
+					if (data[j].task == 'x'){
+						setIcon(outlineTitle, this.settings.icon.taskDone == 'custom' ? 
+							this.settings.customIcon.taskDone : this.settings.icon.taskDone);
+					} else {
+						setIcon(outlineTitle, this.settings.icon.task =='custom' ?
+							this.settings.customIcon.task : this.settings.icon.task);
+					}
+				}
+
+				//リストコールアウトへの対応
+				if (typeof calloutsIndex =='number') {
+					outlineTitle.style.backgroundColor =`RGBA(${this.app.plugins.plugins['obsidian-list-callouts'].settings[calloutsIndex].color},0.15)`;
+					if (this.app.plugins.plugins['obsidian-list-callouts'].settings[calloutsIndex].hasOwnProperty('icon') && data[j].task === void 0){
+						setIcon(outlineTitle, this.app.plugins.plugins['obsidian-list-callouts'].settings[calloutsIndex].icon);
+						displayText = displayText.replace(/^.\s/,'');
+					}
+				}
+			}
+
 			//prefix
 			let prefix = this.settings.prefix[element];
 			if ( element == 'heading'){
@@ -771,7 +807,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 				indent = indent + (additionalIndent > 0 ? additionalIndent : 0);
 			}
 			// リンクが前のエレメントと同じ行だった場合インデント付加
-			if (element =='link' && data[j].position.start.line == data[j-1]?.position.start.line){
+			if (!isCanvas && element =='link' && data[j].position.start.line == data[j-1]?.position.start.line){
 				indent = indent + 1.5;
 			}
 
@@ -785,12 +821,12 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 					}
 			}
 			
-			outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(prefix + data[j].displayText);
+			outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(prefix + displayText);
 
 
 			// インラインプレビュー
 			// リンクとタグは、アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
-			if (this.settings.inlinePreview) {
+			if (!isCanvas && this.settings.inlinePreview ) {
 				let previewText: string ='';
 				
 				if ((element == 'link' || element == 'tag') && data[j].position.end.col < info.lines[ data[j].position.start.line ].length){
@@ -806,50 +842,60 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 			// ツールチッププレビュー
 			// その要素の行から次の要素の前までをプレビュー
 			if (this.settings.tooltipPreview){
-				let previewText2:string ='';
-				// まず次の表示要素の引数を特定
-				let endLine:number = info.numOfLines - 1;  //初期値は文章末
-				let k = j +1; // 現在のアウトライン引数+1からループ開始
-				endpreviewloop: while (k< data.length) {
-					//表示するエレメントタイプであれば行を取得してループを打ち切る
-					if (this.settings.showElements[data[k].typeOfElement]){
-						//ただし各種の実際には非表示となる条件を満たしていたら打ち切らない
-						// リストの設定による非表示
-						if (data[k].typeOfElement == 'listItems' &&
-								( data[k].level >=2 ||
-								((this.settings.allRootItems == false && data[k].level == 1) && (this.settings.allTasks == false || data[k].task === void 0)) ||
-								(this.settings.taskOnly && data[k].task === void 0) ||
-								(this.settings.hideCompletedTasks && data[k].task == 'x'))){
-							k++;
-							continue;
-						// 見出しのレベルによる非表示
-						} else if (data[k].typeOfElement == 'heading' &&
-							this.settings.headingLevel[data[k].level - 1] == false){
-							k++;
-							continue;
-						// simple filterによる非表示
-						} else {
-							for (const value of this.settings.wordsToIgnore[data[k].typeOfElement]){
-								if( (value) && data[k].displayText.includes(value)){
-									k++;
-									continue endpreviewloop;
-								} 
-							}
-							endLine = data[k].position.start.line -1;
-							break;
-						}
-					}
-					k++;
-				}
-				for (let l = data[j].position.start.line; l <= endLine; l++){
-					previewText2 = previewText2 + info.lines[l] +'\n';
-				}
-				// 空行を除去
-				previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
-				setTooltip(outlineTitle, previewText2, {classes:['daily-note-preview']});
+				if (!isCanvas){
+					let previewText2:string ='';
 
-				outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
-				outlineTitle.setAttribute('data-tooltip-delay','10');
+					// まず次の表示要素の引数を特定
+					let endLine:number = info.numOfLines - 1;  //初期値は文章末
+					let k = j +1; // 現在のアウトライン引数+1からループ開始
+					endpreviewloop: while (k< data.length) {
+						//表示するエレメントタイプであれば行を取得してループを打ち切る
+						if (this.settings.showElements[data[k].typeOfElement]){
+							//ただし各種の実際には非表示となる条件を満たしていたら打ち切らない
+							// リストの設定による非表示
+							if (data[k].typeOfElement == 'listItems' &&
+									( data[k].level >=2 ||
+									((this.settings.allRootItems == false && data[k].level == 1) && (this.settings.allTasks == false || data[k].task === void 0)) ||
+									(this.settings.taskOnly && data[k].task === void 0) ||
+									(this.settings.hideCompletedTasks && data[k].task == 'x'))){
+								k++;
+								continue;
+							// 見出しのレベルによる非表示
+							} else if (data[k].typeOfElement == 'heading' &&
+								this.settings.headingLevel[data[k].level - 1] == false){
+								k++;
+								continue;
+							// simple filterによる非表示
+							} else {
+								for (const value of this.settings.wordsToIgnore[data[k].typeOfElement]){
+									if( (value) && data[k].displayText.includes(value)){
+										k++;
+										continue endpreviewloop;
+									} 
+								}
+								endLine = data[k].position.start.line -1;
+								break;
+							}
+						}
+						k++;
+					}
+					for (let l = data[j].position.start.line; l <= endLine; l++){
+						previewText2 = previewText2 + info.lines[l] +'\n';
+					}
+					// 空行を除去
+					previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
+					setTooltip(outlineTitle, previewText2, {classes:['MNO-preview']});
+	
+					outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
+					outlineTitle.setAttribute('data-tooltip-delay','10');
+				} else {
+					//canvas だった場合カードにプレビューを付加
+					if (data[j].typeOfElement =='listItems'){
+					setTooltip(outlineTitle, data[j].displayText, {classes:['MNO-preview']});
+					outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
+					outlineTitle.setAttribute('data-tooltip-delay','10');
+					}
+				}
 			}
 
 			//クリック時
@@ -866,7 +912,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 							const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
 							scrollToElement(subpathPosition.start?.line, 0, this.app);
 						}
-					} else {
+					} else if (!isCanvas) {
 						if (file != this.activeFile){
 							this.holdUpdateOnce = true;
 						}
@@ -900,14 +946,16 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 						state: posInfo
 					});
 				} else {
-					this.app.workspace.trigger('hover-link', {
-						event,
-						source: MultipleNotesOutlineViewType,
-						hoverParent: parentEl,   // rootEl→parentElにした
-						targetEl: outlineTitle,
-						linktext: file.path,
-						state:{scroll: data[j].position.start.line}
-					});
+					if (!isCanvas){
+						this.app.workspace.trigger('hover-link', {
+							event,
+							source: MultipleNotesOutlineViewType,
+							hoverParent: parentEl,   // rootEl→parentElにした
+							targetEl: outlineTitle,
+							linktext: file.path,
+							state:{scroll: data[j].position.start.line}
+						});
+					}
 				}
 				
 			});
@@ -1013,53 +1061,56 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 								.setTitle("Search this tag")
 								.setIcon("search")
 								.onClick(async()=>{
-									const searchString = "tag: #"+ data[j].displayText;
+									const searchString = "tag: #"+ displayText;
 									this.app.internalPlugins.plugins["global-search"]?.instance.openGlobalSearch(searchString);
 								})
 						);
 						menu.addSeparator();
 					}
+					// 以下はcanvasでは非表示
+					if (!isCanvas){
 
-					//新規タブに開く
-					menu.addItem((item)=>
-						item
-							.setTitle("Open in new tab")
-							.setIcon("file-plus")
-							.onClick(async()=> {
-								if (file != this.activeFile){
-									this.holdUpdateOnce = true;
-								}
-								await this.app.workspace.getLeaf('tab').openFile(file);
-								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
-
-							})
-					);
-					//右に開く
-					menu.addItem((item)=>
-						item
-							.setTitle("Open to the right")
-							.setIcon("separator-vertical")
-							.onClick(async()=> {
-								if (file != this.activeFile){
-									this.holdUpdateOnce = true;
-								}
-								await this.app.workspace.getLeaf('split').openFile(file);
-								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
-							})
-					);
-					//新規ウィンドウに開く
-					menu.addItem((item)=>
-						item
-							.setTitle("Open in new window")
-							.setIcon("scan")
-							.onClick(async()=> {
-								if (file != this.activeFile){
-									this.holdUpdateOnce = true;
-								}
-								await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(file);
-								scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
-							})
-					);
+						//新規タブに開く
+						menu.addItem((item)=>
+							item
+								.setTitle("Open in new tab")
+								.setIcon("file-plus")
+								.onClick(async()=> {
+									if (file != this.activeFile){
+										this.holdUpdateOnce = true;
+									}
+									await this.app.workspace.getLeaf('tab').openFile(file);
+									scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+	
+								})
+						);
+						//右に開く
+						menu.addItem((item)=>
+							item
+								.setTitle("Open to the right")
+								.setIcon("separator-vertical")
+								.onClick(async()=> {
+									if (file != this.activeFile){
+										this.holdUpdateOnce = true;
+									}
+									await this.app.workspace.getLeaf('split').openFile(file);
+									scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								})
+						);
+						//新規ウィンドウに開く
+						menu.addItem((item)=>
+							item
+								.setTitle("Open in new window")
+								.setIcon("scan")
+								.onClick(async()=> {
+									if (file != this.activeFile){
+										this.holdUpdateOnce = true;
+									}
+									await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(file);
+									scrollToElement(data[j].position.start.line, data[j].position.start.col, this.app);
+								})
+						);
+					}
 
 					menu.showAtMouseEvent(event);
 				}
@@ -1099,7 +1150,7 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 
 	}
 	// main以外の場合、backlink filesの処理
-	if (category =='main' || this.settings.showBacklinks == false || !info.backlinks){
+	if (category =='main' || this.settings.showBacklinks == false || !info.backlinks || (category =='backlink' && this.settings.hideMinor2hopLink)){
 		return;
 	}
 	backlinkfileloop: for (let i = 0; i < info.backlinks?.length; i++){

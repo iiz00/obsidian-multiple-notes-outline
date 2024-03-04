@@ -163,9 +163,10 @@ body{
     flex-shrink: 1000;
 }
 
-.daily-note-preview{
+.MNO-preview{
     text-align: left;
     animation: unset !important;
+    max-width: 600px;
 }
 
 /*設定画面 settings*/

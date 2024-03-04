@@ -20,7 +20,7 @@ export type Category = 'main'|'outgoing'|'backlink';
 
 export class MultipleNotesOutlineView extends ItemView {
 	
-	plugin: MultipleNotesOutlinePlugin;		
+	plugin: MultipleNotesOutlinePlugin;
 	settings:MultipleNotesOutlineSettings;
 
 	activeFile: TFile;
@@ -128,15 +128,15 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.plugin = plugin;
 		this.settings = settings;
 	}
-  
+
 	getViewType(): string {
 		return MultipleNotesOutlineViewType;
 	}
-  
+
 	getDisplayText(): string {
 		return 'MNO - file view';
 	}
-  
+
 	getIcon(): string {
 		return 'files';
 	}
@@ -159,6 +159,10 @@ export class MultipleNotesOutlineView extends ItemView {
 		// } else {
 		// 	await this.initView();
 		// }
+	}
+
+	updateSettings(){
+		this.settings = this.plugin.settings;
 	}
 
 	async onClose(){
@@ -212,6 +216,8 @@ export class MultipleNotesOutlineView extends ItemView {
 
 				if (!this.settings.autoupdateFileView || (this.settings.suspendUpdateByClickingView && this.holdUpdateOnce) || this.pinnedMode == true){
 					// autoupdateがfalseか、 viewからの直接の遷移の場合更新しない設定であれば更新をスキップ
+				} else if (this.targetFiles.main[0].extension == 'canvas' && this.targetFiles.outgoing.includes(this.activeFile)){
+					// canvasがメインの際、canvasに含まれるファイルを開いてもviewを更新しない
 				} else {
 					this.targetFiles.main[0] = this.activeFile;
 					this.hasMainChanged = true;
@@ -281,7 +287,7 @@ export class MultipleNotesOutlineView extends ItemView {
 				}
 
 				this.flagRegetTarget = true;
-				
+
 				debouncerRequestRefresh.call(this);
 			}
 		}));
