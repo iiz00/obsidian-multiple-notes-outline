@@ -1254,18 +1254,21 @@ export function constructOutlineDOM (file:TFile, info:FileInfo, data: OutlineDat
 export function scrollToElement(line: number, col: number, app: App): void {
     const view = app.workspace.getActiveViewOfType(MarkdownView);
     if (view) {
-        view.editor.focus();
-        view.editor.setCursor (line, col);
-        view.editor.scrollIntoView( {
-            from: {
-                line: line,
-                ch:0
-            },
-            to: {
-                line: line,
-                ch:0
-            }
-        }, true);
+        //view.editor.focus();
+        // view.editor.setCursor (line, col);
+        // view.editor.scrollIntoView( {
+        //     from: {
+        //         line: line,
+        //         ch:0
+        //     },
+        //     to: {
+        //         line: line,
+        //         ch:0
+        //     }
+        // }, true);
+		// view.editor.scrollTo(5);
+		// view.previewMode.applyScroll(line);
+		view.setEphemeralState({line});
     }
 }
 
@@ -1290,7 +1293,7 @@ function attachFileInfo (targetEl: HTMLElement, status: FileStatus, info: FileIn
 					if (firsttagIndex >= 0){
 						targetEl.dataset.subinfo = data[firsttagIndex].displayText;
 					}
-				}	
+				}
 				break;
 			case 'none':
 				break;
