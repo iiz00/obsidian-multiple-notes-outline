@@ -82,6 +82,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/iiz00)<br><br>
 
 ## Changelog
+- 0.5.1
+	- Fixed
+		- Fixed a problem in Reading view where clicking on an outline element would not jump to that position properly. Now the position of the outline element is highlighted when you jump to it.
 - 0.5.0
 	- New function
 		- Canvas support

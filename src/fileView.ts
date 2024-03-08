@@ -308,6 +308,8 @@ export class MultipleNotesOutlineView extends ItemView {
 
 	// ファイル修正、削除、リネームなどの際の自動更新
 	private async autoRefresh(){
+		const startTime = performance.now();
+
 		if (!(this.flagChanged || this.flagRegetTarget || this.flagSaveSettings)){
 			return;
 		}
@@ -390,6 +392,10 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.flagRegetTarget = false;
 		this.flagChanged = false;
 		this.flagSaveSettings = false;
+		const endTime = performance.now();
+		if (this.settings.showDebugInfo){
+			console.log('Multiple Notes Outline: time required to auto refresh, file view: ', endTime - startTime);
+		}
 	}
 
 	// リフレッシュセンター
