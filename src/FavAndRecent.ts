@@ -1,7 +1,7 @@
 import { App, SuggestModal, TAbstractFile, TFile } from "obsidian";
 import { MultipleNotesOutlineView } from "./fileView";
 import { MultipleNotesOutlineFolderView } from "./folderView";
-import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings } from "./main";
+import { MultipleNotesOutlineSettings } from "./main";
 
 export async function updateFavAndRecent(targetPath: string, category: 'file'|'folder', suggestType: 'recent'|'favorite'):Promise<void> {
     this.settings[suggestType][category] = this.settings[suggestType][category].filter(
@@ -105,7 +105,7 @@ export class ModalJump extends SuggestModal<string>{
 // favoriteやrecentのrenameに対応
 
 export function handleRenameFavAndRecentFiles(renamedFile: TAbstractFile, oldPath: string, settings: MultipleNotesOutlineSettings):boolean{
-    let renameType:'file'|'folder' = (renamedFile instanceof TFile)? 'file': 'folder';
+    const renameType:'file'|'folder' = (renamedFile instanceof TFile)? 'file': 'folder';
     let renamed = false;
     for (let i=0; i< settings.recent[renameType].length; i++ ){
         if (settings.recent[renameType][i] == oldPath){
@@ -125,7 +125,7 @@ export function handleRenameFavAndRecentFiles(renamedFile: TAbstractFile, oldPat
 // favoriteやrecentのdeleteに対応
 
 export function handleDeleteFavAndRecentFiles(deletedFile: TAbstractFile, settings: MultipleNotesOutlineSettings):boolean{
-    let deleteType:'file'|'folder' = (deletedFile instanceof TFile)? 'file': 'folder';
+    const deleteType:'file'|'folder' = (deletedFile instanceof TFile)? 'file': 'folder';
     let deleted = false;
     for (let i=0; i< settings.recent[deleteType].length; i++ ){
         if (settings.recent[deleteType][i] == deletedFile.path){
