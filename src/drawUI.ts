@@ -59,7 +59,7 @@ function uiUpdate(parentEl: HTMLElement): void {
 
 				updateFavAndRecent.call(this, this.activeFile.path, "file", "recent");
 
-				this.refreshView(true, true);
+				await this.refreshView(true, true);
 			}
 		});
 		navActionButton.addEventListener("contextmenu", (event: MouseEvent) => {
@@ -68,9 +68,9 @@ function uiUpdate(parentEl: HTMLElement): void {
 				item
 					.setTitle("Pin")
 					.setIcon("pin")
-					.onClick(() => {
+					.onClick(async () => {
 						this.pinnedMode = true;
-						this.refreshView(false, false);
+						await this.refreshView(false, false);
 					}),
 			);
 			menu.showAtMouseEvent(event);
@@ -89,7 +89,7 @@ function uiUpdate(parentEl: HTMLElement): void {
 
 				updateFavAndRecent.call(this, this.activeFile.path, "file", "recent");
 
-				this.refreshView(true, true);
+				await this.refreshView(true, true);
 			}
 		});
 		navActionButton.addEventListener("contextmenu", (event: MouseEvent) => {
@@ -269,10 +269,7 @@ function uiSetting(parentEl: HTMLElement): void {
 }
 
 // 設定ボタン Folder view
-function uiSettingFolderView(
-	parentEl: HTMLElement,
-	instance: MultipleNotesOutlineFolderView,
-): void {
+function uiSettingFolderView(parentEl: HTMLElement, instance: MultipleNotesOutlineFolderView): void {
 	const navActionButton = parentEl.createDiv("clickable-icon nav-action-button");
 	navActionButton.ariaLabel = "open settings";
 	setIcon(navActionButton, "settings");
@@ -375,13 +372,7 @@ function uiToggleHeading(parentEl: HTMLElement): void {
 			const dispText = i == 0 ? "H1" : "H1 - H" + (i + 1).toString();
 			menu.addItem((item) =>
 				item.setTitle(dispText).onClick(async () => {
-					for (let j = 0; j < 6; j++) {
-						if (j <= i) {
-							this.settings.headingLevel[j] = true;
-						} else {
-							this.settings.headingLevel[j] = false;
-						}
-					}
+					this.settings.maxHeadingLevel = i + 1;
 					await this.plugin.saveSettings();
 					this.refreshView(false, false);
 				}),
