@@ -94,14 +94,12 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setName("Hide completed tasks")
 				.setClass("setting-indent")
 				.addToggle((toggle) => {
-					toggle
-						.setValue(this.plugin.settings.hideCompletedTasks)
-						.onChange(async (value) => {
-							this.plugin.settings.hideCompletedTasks = value;
-							this.display();
-							await this.plugin.saveSettings();
-							this.callRefreshView(false);
-						});
+					toggle.setValue(this.plugin.settings.hideCompletedTasks).onChange(async (value) => {
+						this.plugin.settings.hideCompletedTasks = value;
+						this.display();
+						await this.plugin.saveSettings();
+						this.callRefreshView(false);
+					});
 				});
 
 			new Setting(containerEl)
@@ -109,14 +107,12 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setDesc("shows list items marked with List Callouts plugin")
 				.setClass("setting-indent")
 				.addToggle((toggle) => {
-					toggle
-						.setValue(this.plugin.settings.dispListCallouts)
-						.onChange(async (value) => {
-							this.plugin.settings.dispListCallouts = value;
-							this.display();
-							await this.plugin.saveSettings();
-							this.callRefreshView(false);
-						});
+					toggle.setValue(this.plugin.settings.dispListCallouts).onChange(async (value) => {
+						this.plugin.settings.dispListCallouts = value;
+						this.display();
+						await this.plugin.saveSettings();
+						this.callRefreshView(false);
+					});
 				});
 		}
 
@@ -223,53 +219,43 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Open last view at startup")
-			.setDesc(
-				"If enabled, the most recently opened view is opened when File View is launched.",
-			)
+			.setDesc("If enabled, the most recently opened view is opened when File View is launched.")
 			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.openRecentAtStartup.file)
-					.onChange(async (value) => {
-						this.plugin.settings.openRecentAtStartup.file = value;
-						this.display();
-						await this.plugin.saveSettings();
-						this.callRefreshView(false);
-					});
+				toggle.setValue(this.plugin.settings.openRecentAtStartup.file).onChange(async (value) => {
+					this.plugin.settings.openRecentAtStartup.file = value;
+					this.display();
+					await this.plugin.saveSettings();
+					this.callRefreshView(false);
+				});
 			});
 
 		// 各カテゴリの表示/非表示
-		new Setting(containerEl)
-			.setName("Show the main target file section")
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.showFiles.main).onChange(async (value) => {
-					this.plugin.settings.showFiles.main = value;
-					this.display();
-					await this.plugin.saveSettings();
-					this.callRefreshView(false);
-				});
+		new Setting(containerEl).setName("Show the main target file section").addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.showFiles.main).onChange(async (value) => {
+				this.plugin.settings.showFiles.main = value;
+				this.display();
+				await this.plugin.saveSettings();
+				this.callRefreshView(false);
 			});
+		});
 
-		new Setting(containerEl)
-			.setName("Show the the outgoing files section")
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.showFiles.outgoing).onChange(async (value) => {
-					this.plugin.settings.showFiles.outgoing = value;
-					this.display();
-					await this.plugin.saveSettings();
-					this.callRefreshView(false);
-				});
+		new Setting(containerEl).setName("Show the the outgoing files section").addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.showFiles.outgoing).onChange(async (value) => {
+				this.plugin.settings.showFiles.outgoing = value;
+				this.display();
+				await this.plugin.saveSettings();
+				this.callRefreshView(false);
 			});
+		});
 
-		new Setting(containerEl)
-			.setName("Show the the backlink files section")
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.showFiles.backlink).onChange(async (value) => {
-					this.plugin.settings.showFiles.backlink = value;
-					this.display();
-					await this.plugin.saveSettings();
-					this.callRefreshView(false);
-				});
+		new Setting(containerEl).setName("Show the the backlink files section").addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.showFiles.backlink).onChange(async (value) => {
+				this.plugin.settings.showFiles.backlink = value;
+				this.display();
+				await this.plugin.saveSettings();
+				this.callRefreshView(false);
 			});
+		});
 
 		new Setting(containerEl)
 			.setName("Update File View when another file becomes active")
@@ -293,13 +279,11 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 					"suspend updating the view when the active file is changed by clicking on items in the File View(default = on)",
 				)
 				.addToggle((toggle) => {
-					toggle
-						.setValue(this.plugin.settings.suspendUpdateByClickingView)
-						.onChange(async (value) => {
-							this.plugin.settings.suspendUpdateByClickingView = value;
-							this.display();
-							await this.plugin.saveSettings();
-						});
+					toggle.setValue(this.plugin.settings.suspendUpdateByClickingView).onChange(async (value) => {
+						this.plugin.settings.suspendUpdateByClickingView = value;
+						this.display();
+						await this.plugin.saveSettings();
+					});
 				});
 		}
 
@@ -365,18 +349,14 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Open last view at startup")
-			.setDesc(
-				"If enabled, the most recently opened view is opened when Folder View is launched.",
-			)
+			.setDesc("If enabled, the most recently opened view is opened when Folder View is launched.")
 			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.openRecentAtStartup.folder)
-					.onChange(async (value) => {
-						this.plugin.settings.openRecentAtStartup.folder = value;
-						this.display();
-						await this.plugin.saveSettings();
-						this.callRefreshView(false);
-					});
+				toggle.setValue(this.plugin.settings.openRecentAtStartup.folder).onChange(async (value) => {
+					this.plugin.settings.openRecentAtStartup.folder = value;
+					this.display();
+					await this.plugin.saveSettings();
+					this.callRefreshView(false);
+				});
 			});
 
 		// 各カテゴリの表示/非表示
@@ -393,30 +373,31 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 			});
 
 		//表示する見出しレベル
+		// TODO: キャプションを変更
 		this.containerEl.createEl("h4", {
 			text: "Headings",
 			cls: "setting-category",
 		});
 		if (this.plugin.settings.showElements.heading) {
-			this.containerEl.createEl("p", {
-				text: "Heading level to display",
-				cls: "setting-item-description",
-			});
-			this.plugin.settings.headingLevel.forEach((value, index, arry) => {
-				new Setting(containerEl)
-					.setName(`Level${index + 1}`)
-					.setClass("setting-indent")
-					.addToggle((toggle) => {
-						toggle
-							.setValue(this.plugin.settings.headingLevel[index])
-							.onChange(async (value) => {
-								this.plugin.settings.headingLevel[index] = value;
-								this.display();
-								await this.plugin.saveSettings();
-								this.callRefreshView(false);
-							});
-					});
-			});
+			new Setting(containerEl)
+				.setName("Max heading level to display")
+				.setDesc("specify the maximum heading level to display")
+				.addDropdown((dropdown) => {
+					dropdown
+						.addOption("1", "1 #")
+						.addOption("2", "2 ##")
+						.addOption("3", "3 ###")
+						.addOption("4", "4 ####")
+						.addOption("5", "5 #####")
+						.addOption("6", "6 ######")
+						.setValue(String(this.plugin.settings.maxHeadingLevel))
+						.onChange(async (value) => {
+							this.plugin.settings.maxHeadingLevel = Number(value);
+							this.display();
+							await this.plugin.saveSettings();
+							this.callRefreshView(false);
+						});
+				});
 		} else {
 			this.containerEl.createEl("p", {
 				text: "To display this section, activate 'Show headings' in Basics section.",
@@ -571,29 +552,25 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 			cls: "setting-category",
 		});
 
-		new Setting(containerEl)
-			.setName("Number of recent files/folders to be stored")
-			.addText((text) => {
-				text.inputEl.setAttr("type", "number");
-				text.setPlaceholder(String(DEFAULT_SETTINGS.numOfRecentFiles)).setValue(
-					String(this.plugin.settings.numOfRecentFiles),
-				);
+		new Setting(containerEl).setName("Number of recent files/folders to be stored").addText((text) => {
+			text.inputEl.setAttr("type", "number");
+			text.setPlaceholder(String(DEFAULT_SETTINGS.numOfRecentFiles)).setValue(
+				String(this.plugin.settings.numOfRecentFiles),
+			);
 
-				text.inputEl.onblur = async (e: FocusEvent) => {
-					let parsed = parseInt((e.target as HTMLInputElement).value, 10);
-					if (parsed <= 0) {
-						parsed = DEFAULT_SETTINGS.numOfRecentFiles;
-					}
-					this.plugin.settings.numOfRecentFiles = parsed;
-					await this.plugin.saveSettings();
-				};
-			});
+			text.inputEl.onblur = async (e: FocusEvent) => {
+				let parsed = parseInt((e.target as HTMLInputElement).value, 10);
+				if (parsed <= 0) {
+					parsed = DEFAULT_SETTINGS.numOfRecentFiles;
+				}
+				this.plugin.settings.numOfRecentFiles = parsed;
+				await this.plugin.saveSettings();
+			};
+		});
 
 		new Setting(containerEl)
 			.setName("Auto pin")
-			.setDesc(
-				"When File View is updated from recent/favorite files, automatically pin the view.",
-			)
+			.setDesc("When File View is updated from recent/favorite files, automatically pin the view.")
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.pinAfterJump).onChange(async (value) => {
 					this.plugin.settings.pinAfterJump = value;
@@ -614,220 +591,6 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
-
-		// フィルター
-		/*  filter関連コメントアウト
-        this.containerEl.createEl("h4", {
-            text: "Simple filter",
-            cls: 'setting-category'
-        });
-        if (this.plugin.settings.showElements.heading){
-            new Setting(containerEl)
-            .setName("Headings to ignore")
-            .setDesc("Headings which include listed words will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToIgnore.heading.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToIgnore.heading = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        if (this.plugin.settings.showElements.link){
-            new Setting(containerEl)
-            .setName("Links to ignore")
-            .setDesc("Links which include listed words will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToIgnore.link.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToIgnore.link = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        if (this.plugin.settings.showElements.tag){
-            new Setting(containerEl)
-            .setName("Tags to ignore")
-            .setDesc("tags which include listed words will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToIgnore.tag.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToIgnore.tag = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        if (this.plugin.settings.showElements.listItems){
-            new Setting(containerEl)
-            .setName("List items to ignore")
-            .setDesc("List items which include listed words will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToIgnore.listItems.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToIgnore.listItems = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        // Include / Exclude
-        this.containerEl.createEl("h4", {
-            text: "Include",
-            cls: 'setting-category'
-        });
-        this.containerEl.createEl("p", {
-            text: "If you specify one outline element type and words to include, only elements which belong to the included elements are displayed.",
-            cls:"setting-item-description",
-        });
-        new Setting(containerEl)
-        .setName("Element type for include")
-        .addDropdown((dropdown) => {
-            dropdown
-                .addOption("none", "none")
-                .addOption("heading","heading")
-                .addOption("link","link")
-                .addOption("tag","tag")
-                .addOption("listItems","listItems")
-                .setValue(this.plugin.settings.includeOnly)
-                .onChange(async (value) => {
-                  this.plugin.settings.includeOnly = value;
-                  this.display();
-                  await this.plugin.saveSettings();
-                  this.callRefreshView(false);
-                })
-        });
-
-        if (this.plugin.settings.includeOnly != 'none'){
-            new Setting(containerEl)
-            .setName("Words to include")
-            .setClass('setting-indent')
-            .setDesc("Only elements specified in 'Element type for include' which include listed words will be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToInclude.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToInclude = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-
-            new Setting(containerEl)
-            .setName("Include the beginning part")
-            .setClass('setting-indent')
-            .setDesc("Specify whether to include the beginning parts of each daily note with no element to include ")
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.includeBeginning)
-                    .onChange(async (value) => {
-                        this.plugin.settings.includeBeginning = value;
-                        this.display();
-                        await this.plugin.saveSettings();
-                        this.callRefreshView(false);
-                    })
-
-            });
-        }
-
-        this.containerEl.createEl("h4", {
-            text: "Exclude",
-            cls: 'setting-category'
-        });
-        this.containerEl.createEl("p", {
-            text: "Specified outline elements and elements belonging to that element will not be displayed.",
-            cls:"setting-item-description",
-        });
-        new Setting(containerEl)
-        .setName("Exclusion ends at")
-        .setDesc("Excluding elements specified below ends at the selected type of elements. If you specified 'Element type for include' above, this value is ignored and excludeing elements ends at that type of elements.")
-        .addDropdown((dropdown) => {
-            dropdown
-                .addOption("none", "none")
-                .addOption("heading","heading")
-                .addOption("link","link")
-                .addOption("tag","tag")
-                .addOption("listItems","listItems")
-                .setValue(this.plugin.settings.primeElement)
-                .onChange(async (value) => {
-                  this.plugin.settings.primeElement = value;
-                  this.display();
-                  await this.plugin.saveSettings();
-                  this.callRefreshView(false);
-                })
-        });
-
-        if (this.plugin.settings.showElements.heading){
-            new Setting(containerEl)
-            .setName("Headings to exclude")
-            .setDesc("Headings which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToExclude.heading.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToExclude.heading = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        if (this.plugin.settings.showElements.link){
-            new Setting(containerEl)
-            .setName("Links to exclude")
-            .setDesc("Links which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToExclude.link.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToExclude.link = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-
-        if (this.plugin.settings.showElements.tag){
-            new Setting(containerEl)
-            .setName("Tags to exclude")
-            .setDesc("tags which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToExclude.tag.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToExclude.tag = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-
-        if (this.plugin.settings.showElements.listItems){
-            new Setting(containerEl)
-            .setName("List items to exclude")
-            .setDesc("List items which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
-            .addTextArea((textArea) =>{
-                textArea.setValue(this.plugin.settings.wordsToExclude.listItems.join('\n'));
-                textArea.inputEl.onblur = async (e: FocusEvent ) => {
-                    const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.wordsToExclude.listItems = inputedValue.split('\n');
-                    await this.plugin.saveSettings();
-                    this.callRefreshView(false);
-                }
-            });
-        }
-        */
 
 		// 外観
 		this.containerEl.createEl("h4", {
@@ -851,9 +614,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 		// headingのインデントレベルにあわせて他の要素をインデントするか
 		new Setting(containerEl)
 			.setName("Indent other than headings")
-			.setDesc(
-				"Whether other elements should be indented to preceding headings (default = preceding heading +1)",
-			)
+			.setDesc("Whether other elements should be indented to preceding headings (default = preceding heading +1)")
 			.addDropdown((dropdown) => {
 				dropdown
 					.addOption("0", "none")
@@ -914,8 +675,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 					text.setValue(this.plugin.settings.customNoteTitleBackgroundColorHover.light);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
-						this.plugin.settings.customNoteTitleBackgroundColorHover.light =
-							inputedValue;
+						this.plugin.settings.customNoteTitleBackgroundColorHover.light = inputedValue;
 						await this.plugin.saveSettings();
 						this.callRefreshView(false);
 					};
@@ -944,8 +704,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 					text.setValue(this.plugin.settings.customNoteTitleBackgroundColorHover.dark);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
-						this.plugin.settings.customNoteTitleBackgroundColorHover.dark =
-							inputedValue;
+						this.plugin.settings.customNoteTitleBackgroundColorHover.dark = inputedValue;
 						await this.plugin.saveSettings();
 						this.callRefreshView(false);
 					};
@@ -964,10 +723,10 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.addDropdown((dropdown) => {
 					dropdown
 						.addOption("none", "none")
-						//.addOption("heading","heading")
+						.addOption("heading", "heading")
 						.addOption("hash", "hash")
 						.addOption("chevron-right", "chevron-right")
-						//.addOption("headingwithnumber","heading with number")
+						.addOption("headingwithnumber", "heading with number")
 						.addOption("custom", "custom")
 						.setValue(this.plugin.settings.icon.heading)
 						.onChange(async (value) => {
@@ -1002,9 +761,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setClass("setting-indent")
 				.addText((text) => {
 					text.inputEl.setAttr("type", "string");
-					text.setPlaceholder(DEFAULT_SETTINGS.prefix.heading).setValue(
-						this.plugin.settings.prefix.heading,
-					);
+					text.setPlaceholder(DEFAULT_SETTINGS.prefix.heading).setValue(this.plugin.settings.prefix.heading);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
 						this.plugin.settings.prefix.heading = inputedValue;
@@ -1093,9 +850,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setClass("setting-indent")
 				.addText((text) => {
 					text.inputEl.setAttr("type", "string");
-					text.setPlaceholder(DEFAULT_SETTINGS.prefix.link).setValue(
-						this.plugin.settings.prefix.link,
-					);
+					text.setPlaceholder(DEFAULT_SETTINGS.prefix.link).setValue(this.plugin.settings.prefix.link);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
 						this.plugin.settings.prefix.link = inputedValue;
@@ -1155,9 +910,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setClass("setting-indent")
 				.addText((text) => {
 					text.inputEl.setAttr("type", "string");
-					text.setPlaceholder(DEFAULT_SETTINGS.prefix.tag).setValue(
-						this.plugin.settings.prefix.tag,
-					);
+					text.setPlaceholder(DEFAULT_SETTINGS.prefix.tag).setValue(this.plugin.settings.prefix.tag);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
 						this.plugin.settings.prefix.tag = inputedValue;
@@ -1280,9 +1033,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setClass("setting-indent")
 				.addText((text) => {
 					text.inputEl.setAttr("type", "string");
-					text.setPlaceholder(DEFAULT_SETTINGS.prefix.task).setValue(
-						this.plugin.settings.prefix.task,
-					);
+					text.setPlaceholder(DEFAULT_SETTINGS.prefix.task).setValue(this.plugin.settings.prefix.task);
 					text.inputEl.onblur = async (e: FocusEvent) => {
 						const inputedValue = (e.target as HTMLInputElement).value;
 						this.plugin.settings.prefix.task = inputedValue;
@@ -1296,14 +1047,12 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 				.setDesc("add [ ] or [x]")
 				.setClass("setting-indent")
 				.addToggle((toggle) => {
-					toggle
-						.setValue(this.plugin.settings.addCheckboxText)
-						.onChange(async (value) => {
-							this.plugin.settings.addCheckboxText = value;
-							this.display();
-							await this.plugin.saveSettings();
-							this.callRefreshView(false);
-						});
+					toggle.setValue(this.plugin.settings.addCheckboxText).onChange(async (value) => {
+						this.plugin.settings.addCheckboxText = value;
+						this.display();
+						await this.plugin.saveSettings();
+						this.callRefreshView(false);
+					});
 				});
 			//完了済みタスク
 			this.containerEl.createEl("p", {
@@ -1435,9 +1184,7 @@ export class MultipleNotesOutlineSettingTab extends PluginSettingTab {
 		// 読み込み上限
 		new Setting(containerEl)
 			.setName("Maximum number of files to read")
-			.setDesc(
-				"To avoid overloading, files that exceed this number will be initially collapsed. (default = 50)",
-			)
+			.setDesc("To avoid overloading, files that exceed this number will be initially collapsed. (default = 50)")
 			.addText((text) => {
 				text.inputEl.setAttr("type", "number");
 				text.setPlaceholder(String(DEFAULT_SETTINGS.readLimit)).setValue(

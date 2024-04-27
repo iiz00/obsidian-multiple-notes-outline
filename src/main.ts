@@ -26,7 +26,8 @@ export interface MultipleNotesOutlineSettings {
 		task: boolean;
 	};
 
-	headingLevel: boolean[];
+	//headingLevel: boolean[];
+	maxHeadingLevel: number;
 
 	hideLinksBetweenRelatedFiles: "none" | "mainOnly" | "toMainOnly" | "all";
 
@@ -190,7 +191,8 @@ export const DEFAULT_SETTINGS: MultipleNotesOutlineSettings = {
 		task: true,
 	},
 
-	headingLevel: [true, true, true, false, false, false],
+	//headingLevel: [true, true, true, false, false, false],
+	maxHeadingLevel: 6,
 
 	hideLinksBetweenRelatedFiles: "none",
 
@@ -421,8 +423,7 @@ export default class MultipleNotesOutlinePlugin extends Plugin {
 
 		this.registerView(
 			MultipleNotesOutlineFolderViewType,
-			(leaf) =>
-				(this.folderview = new MultipleNotesOutlineFolderView(leaf, this, this.settings)),
+			(leaf) => (this.folderview = new MultipleNotesOutlineFolderView(leaf, this, this.settings)),
 		);
 
 		//コマンド追加
