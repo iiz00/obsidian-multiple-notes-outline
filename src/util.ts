@@ -82,8 +82,7 @@ export function handleRenameRelatedFiles(
 	for (const srcFilePath in settings.relatedFiles) {
 		for (const dstFilePath in settings.relatedFiles[srcFilePath]) {
 			if (dstFilePath == oldPath) {
-				settings.relatedFiles[srcFilePath][renamedFile.path] =
-					settings.relatedFiles[srcFilePath][dstFilePath];
+				settings.relatedFiles[srcFilePath][renamedFile.path] = settings.relatedFiles[srcFilePath][dstFilePath];
 				delete settings.relatedFiles[srcFilePath][dstFilePath];
 				renamed = true;
 			}
@@ -99,10 +98,7 @@ export function handleRenameRelatedFiles(
 }
 
 // relatedFilesのdeleteに対応
-export function handleDeleteRelatedFiles(
-	deletedFile: TAbstractFile,
-	settings: MultipleNotesOutlineSettings,
-) {
+export function handleDeleteRelatedFiles(deletedFile: TAbstractFile, settings: MultipleNotesOutlineSettings) {
 	let deleted = false;
 	for (const srcFilePath in settings.relatedFiles) {
 		for (const dstFilePath in settings.relatedFiles[srcFilePath]) {
@@ -127,20 +123,14 @@ export function getTheme(): "light" | "dark" {
 }
 
 // ファイルタイトルの背景色を指定ver2（css変数を設定値に基づいて変更）  ※ファイルエクスプローラのフォルダの背景色に相当
-export function setNoteTitleBackgroundColor(
-	theme: "light" | "dark",
-	settings: MultipleNotesOutlineSettings,
-) {
+export function setNoteTitleBackgroundColor(theme: "light" | "dark", settings: MultipleNotesOutlineSettings) {
 	switch (settings.noteTitleBackgroundColor) {
 		case "none":
 			break;
 		case "custom":
 			document
 				.getElementsByTagName("body")[0]
-				.style.setProperty(
-					"--MNO-filetitle-background",
-					settings.customNoteTitleBackgroundColor[theme],
-				);
+				.style.setProperty("--MNO-filetitle-background", settings.customNoteTitleBackgroundColor[theme]);
 			document
 				.getElementsByTagName("body")[0]
 				.style.setProperty(
@@ -192,10 +182,16 @@ export function sortFileOrder(
 			break;
 		case "ctimeDescending":
 			order.sort((val1, val2) => {
+				// file vs folder ならfileを前に
 				if (status[val1].isFolder != status[val2].isFolder) {
 					return status[val1].isFolder == true ? 1 : -1;
 				}
-				return (files[val2] as TFile).stat.ctime - (files[val1] as TFile).stat.ctime;
+				// folder ならアルファベット昇順に
+				if (status[val1].isFolder == true) {
+					return files[val1].name.localeCompare(files[val2].name);
+				}
+				// file ならctime降順に
+				return (files[val2] as TFile)?.stat.ctime - (files[val1] as TFile)?.stat.ctime;
 			});
 			break;
 
@@ -204,7 +200,10 @@ export function sortFileOrder(
 				if (status[val1].isFolder != status[val2].isFolder) {
 					return status[val1].isFolder == true ? 1 : -1;
 				}
-				return (files[val1] as TFile).stat.ctime - (files[val2] as TFile).stat.ctime;
+				if (status[val1].isFolder == true) {
+					return files[val1].name.localeCompare(files[val2].name);
+				}
+				return (files[val1] as TFile)?.stat.ctime - (files[val2] as TFile)?.stat.ctime;
 			});
 			break;
 
@@ -212,6 +211,9 @@ export function sortFileOrder(
 			order.sort((val1, val2) => {
 				if (status[val1].isFolder != status[val2].isFolder) {
 					return status[val1].isFolder == true ? 1 : -1;
+				}
+				if (status[val1].isFolder == true) {
+					return files[val1].name.localeCompare(files[val2].name);
 				}
 				return (files[val2] as TFile).stat.mtime - (files[val1] as TFile).stat.mtime;
 			});
@@ -221,6 +223,9 @@ export function sortFileOrder(
 			order.sort((val1, val2) => {
 				if (status[val1].isFolder != status[val2].isFolder) {
 					return status[val1].isFolder == true ? 1 : -1;
+				}
+				if (status[val1].isFolder == true) {
+					return files[val1].name.localeCompare(files[val2].name);
 				}
 				return (files[val1] as TFile).stat.mtime - (files[val2] as TFile).stat.mtime;
 			});
@@ -239,12 +244,7 @@ export class ModalConfirm extends Modal {
 
 	onSubmit: () => void;
 
-	constructor(
-		app: App,
-		plugin: MultipleNotesOutlinePlugin,
-		instruction: string,
-		onSubmit: () => void,
-	) {
+	constructor(app: App, plugin: MultipleNotesOutlinePlugin, instruction: string, onSubmit: () => void) {
 		super(app);
 		this.plugin = plugin;
 		this.instruction = instruction;
@@ -315,9 +315,7 @@ export function getSubpathPosition(app: App, file: TFile, subpath: string): Pos 
 	}
 	const checkpath = stripHeading(subpath);
 	if (cache.headings?.length) {
-		const index = cache.headings.findIndex(
-			(element) => stripHeading(element.heading) == checkpath,
-		);
+		const index = cache.headings.findIndex((element) => stripHeading(element.heading) == checkpath);
 		if (index >= 0) {
 			return cache.headings[index].position;
 		}

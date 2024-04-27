@@ -178,7 +178,6 @@ export class MultipleNotesOutlineView extends ItemView {
 	}
 
 	private async initView() {
-		console.log("ブランチテスト。develop＠1F");
 		await this.bootDelay();
 
 		checkRelatedFiles(this.app, this.settings);
@@ -614,12 +613,6 @@ export class MultipleNotesOutlineView extends ItemView {
 
 	//  アウトライン描画
 	private drawOutline(previousY: number): void {
-		// include only modeか  filter関連コメントアウト
-		// this.includeMode = (this.settings.includeOnly != 'none') && (Boolean(this.settings.wordsToInclude.length) || (this.settings.includeBeginning));
-		const startTime = performance.now();
-		// 表示オンになっている見出しレベルの最高値
-		//this.maxLevel = this.settings.headingLevel.indexOf(true);
-
 		const containerEl: HTMLElement = createDiv("nav-files-container node-insert-event");
 		const rootEl: HTMLElement = containerEl.createDiv("tree-item nav-folder mod-root");
 		const rootChildrenEl: HTMLElement = rootEl.createDiv("tree-item-children nav-folder-children");
@@ -663,23 +656,14 @@ export class MultipleNotesOutlineView extends ItemView {
 			this.constructCategoryDOM("backlink", "links-coming-in", "Backlink Files", rootChildrenEl, categoryAOTEl);
 		}
 
-		const midTime1 = performance.now();
-
 		// アウトライン部分の描画実行
 		this.contentEl.appendChild(containerEl);
-		const midTime2 = performance.now();
 
 		// スクロール位置を復元
-		console.log("スクロール位置復元suruka？", this.hasMainChanged, previousY);
 		if (this.hasMainChanged == false && previousY != 0) {
 			containerEl.scrollTop = previousY;
 		}
 		this.hasMainChanged = false;
-		const endTime = performance.now();
-		console.log("DOM構築", midTime1 - startTime);
-		console.log("appendチャイルド", midTime2 - midTime1);
-		console.log("スクロール", endTime - midTime2);
-		console.log("全体", endTime - startTime);
 	}
 
 	// categoryのDOMを作成
