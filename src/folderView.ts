@@ -2,12 +2,7 @@ import { debounce, Debouncer, Menu, TFolder } from "obsidian";
 
 import { ItemView, WorkspaceLeaf, TFile, TAbstractFile } from "obsidian";
 
-import MultipleNotesOutlinePlugin, {
-	MultipleNotesOutlineSettings,
-	OutlineData,
-	FileInfo,
-	FileStatus,
-} from "src/main";
+import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings, OutlineData, FileInfo, FileStatus } from "src/main";
 
 import { initFileStatus, getFileInfo, getOutline } from "src/getOutline";
 import {
@@ -22,7 +17,7 @@ import {
 } from "src/util";
 
 import { drawUIFolderView } from "src/drawUI";
-import { constructNoteDOM, constructOutlineDOM } from "src/constructDOM";
+import { constructOutlineDOM } from "src/constructOutlineDOM";
 import {
 	checkFavAndRecentFiles,
 	deleteFavAndRecent,
@@ -30,6 +25,7 @@ import {
 	handleRenameFavAndRecentFiles,
 	updateFavAndRecent,
 } from "./FavAndRecent";
+import { constructNoteDOM } from "./constructNoteDOM";
 
 export const MultipleNotesOutlineFolderViewType = "multiple-notes-outline-folder-view";
 
@@ -72,7 +68,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	// include mode filter関連コメントアウト
 	// includeMode: boolean;
 
-	maxLevel: number;
+	//maxLevel: number;
 
 	//全ファイルの折りたたみ
 	collapseAll = false;
@@ -97,11 +93,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 
 	isDataviewEnabled = false;
 
-	constructor(
-		leaf: WorkspaceLeaf,
-		plugin: MultipleNotesOutlinePlugin,
-		settings: MultipleNotesOutlineSettings,
-	) {
+	constructor(leaf: WorkspaceLeaf, plugin: MultipleNotesOutlinePlugin, settings: MultipleNotesOutlineSettings) {
 		super(leaf);
 		this.plugin = plugin;
 		this.settings = settings;
@@ -163,23 +155,15 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		if (this.activeFile) {
 			if (
 				this.settings.openRecentAtStartup.folder &&
-				this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof
-					TFolder
+				this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof TFolder
 			) {
-				this.targetFolder = this.app.vault.getAbstractFileByPath(
-					this.settings.recent.folder?.[0],
-				) as TFolder;
+				this.targetFolder = this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) as TFolder;
 			} else {
 				this.targetFolder = this.activeFile.parent;
 			}
 		} else {
-			if (
-				this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof
-				TFolder
-			) {
-				this.targetFolder = this.app.vault.getAbstractFileByPath(
-					this.settings.recent.folder?.[0],
-				) as TFolder;
+			if (this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) instanceof TFolder) {
+				this.targetFolder = this.app.vault.getAbstractFileByPath(this.settings.recent.folder?.[0]) as TFolder;
 			} else {
 				this.targetFolder = null;
 			}
@@ -240,11 +224,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 				if (changedRelatedFiles) {
 					this.flagSaveSettings = true;
 				}
-				const changedFavAndRecent = handleRenameFavAndRecentFiles(
-					file,
-					oldPath,
-					this.settings,
-				);
+				const changedFavAndRecent = handleRenameFavAndRecentFiles(file, oldPath, this.settings);
 				if (changedFavAndRecent) {
 					this.flagSaveSettings = true;
 				}
@@ -396,9 +376,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 	async processFolder(folder: TFolder): Promise<void> {
 		this.targetFiles[folder.path] = folder.children;
 		this.fileStatus[folder.path] = initFileStatus(this.targetFiles[folder.path]);
-		this.fileOrder[folder.path] = [...Array(this.targetFiles[folder.path].length)].map(
-			(_, i) => i,
-		);
+		this.fileOrder[folder.path] = [...Array(this.targetFiles[folder.path].length)].map((_, i) => i);
 		sortFileOrder(
 			this.fileOrder[folder.path],
 			this.targetFiles[folder.path],
@@ -411,11 +389,8 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		this.outlineData[folder.path] = [];
 
 		if (folder.children.length <= this.settings.processLimit) {
-			[
-				this.fileStatus[folder.path],
-				this.fileInfo[folder.path],
-				this.outlineData[folder.path],
-			] = await this.getOutlines(this.targetFiles[folder.path], this.fileStatus[folder.path]);
+			[this.fileStatus[folder.path], this.fileInfo[folder.path], this.outlineData[folder.path]] =
+				await this.getOutlines(this.targetFiles[folder.path], this.fileStatus[folder.path]);
 		}
 	}
 
@@ -452,13 +427,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 					);
 					fileInfo.push(info);
 
-					const data = await getOutline(
-						this.app,
-						files[i] as TFile,
-						status[i],
-						info,
-						this.settings,
-					);
+					const data = await getOutline(this.app, files[i] as TFile, status[i], info, this.settings);
 					if (data) {
 						outlineData.push(data);
 						status[i].outlineReady = true;
@@ -481,13 +450,11 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 		// this.includeMode = (this.settings.includeOnly != 'none') && (Boolean(this.settings.wordsToInclude.length) || (this.settings.includeBeginning));
 
 		// 表示オンになっている見出しレベルの最高値
-		this.maxLevel = this.settings.headingLevel.indexOf(true);
+		//this.maxLevel = this.settings.headingLevel.indexOf(true);
 
 		const containerEl: HTMLElement = createDiv("nav-files-container node-insert-event");
 		const rootEl: HTMLElement = containerEl.createDiv("tree-item nav-folder mod-root");
-		const rootChildrenEl: HTMLElement = rootEl.createDiv(
-			"tree-item-children nav-folder-children",
-		);
+		const rootChildrenEl: HTMLElement = rootEl.createDiv("tree-item-children nav-folder-children");
 
 		// id を付加（スクロール位置の把握用）
 		containerEl.id = "MNOfolderview-listcontainer";
@@ -498,9 +465,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			"tree-item-self is-clickable mod-collapsible nav-folder-title is-targetfolder",
 		);
 		// setIcon(folderTitleEl, 'folder');
-		folderTitleEl
-			.createDiv("tree-item-inner nav-folder-title-content")
-			.setText(this.targetFolder.path);
+		folderTitleEl.createDiv("tree-item-inner nav-folder-title-content").setText(this.targetFolder.path);
 
 		folderTitleEl.addEventListener("contextmenu", (event: MouseEvent) => {
 			const menu = new Menu();
@@ -511,12 +476,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 						.setTitle("MNO: Remove from favorites")
 						.setIcon("bookmark-minus")
 						.onClick(async () => {
-							deleteFavAndRecent.call(
-								this,
-								this.targetFolder.path,
-								"folder",
-								"favorite",
-							);
+							deleteFavAndRecent.call(this, this.targetFolder.path, "folder", "favorite");
 							await this.plugin.saveSettings();
 						}),
 				);
@@ -526,12 +486,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 						.setTitle("MNO: Add to favorites")
 						.setIcon("bookmark-plus")
 						.onClick(async () => {
-							updateFavAndRecent.call(
-								this,
-								this.targetFolder.path,
-								"folder",
-								"favorite",
-							);
+							updateFavAndRecent.call(this, this.targetFolder.path, "folder", "favorite");
 							await this.plugin.saveSettings();
 						}),
 				);
@@ -539,9 +494,7 @@ export class MultipleNotesOutlineFolderView extends ItemView {
 			menu.showAtMouseEvent(event);
 		});
 
-		const folderChildrenEl: HTMLElement = folderEl.createDiv(
-			"tree-item-children nav-folder-children",
-		);
+		const folderChildrenEl: HTMLElement = folderEl.createDiv("tree-item-children nav-folder-children");
 
 		// Always on Top
 		const categoryAOTEl: HTMLElement = folderChildrenEl.createDiv("tree-item nav-folder");

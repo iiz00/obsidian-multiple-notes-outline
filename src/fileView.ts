@@ -2,12 +2,7 @@ import { setIcon, debounce, Debouncer } from "obsidian";
 
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 
-import MultipleNotesOutlinePlugin, {
-	MultipleNotesOutlineSettings,
-	OutlineData,
-	FileInfo,
-	FileStatus,
-} from "src/main";
+import MultipleNotesOutlinePlugin, { MultipleNotesOutlineSettings, OutlineData, FileInfo, FileStatus } from "src/main";
 
 import { getOutgoingLinkFiles } from "src/getTargetFiles";
 import { initFileStatus, getFileInfo, getOutline } from "src/getOutline";
@@ -23,13 +18,15 @@ import {
 } from "src/util";
 
 import { drawUI } from "src/drawUI";
-import { constructNoteDOM, constructOutlineDOM } from "src/constructDOM";
+import { constructOutlineDOM } from "src/constructOutlineDOM";
+
 import {
 	checkFavAndRecentFiles,
 	handleDeleteFavAndRecentFiles,
 	handleRenameFavAndRecentFiles,
 	updateFavAndRecent,
 } from "./FavAndRecent";
+import { constructNoteDOM } from "./constructNoteDOM";
 
 export const MultipleNotesOutlineViewType = "multiple-notes-outline";
 
@@ -101,7 +98,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	// include mode フィルター関連 コメントアウト
 	// includeMode: boolean;
 
-	maxLevel: number;
+	//maxLevel: number;
 
 	//全ファイルの折りたたみ
 	collapseAll = false;
@@ -135,11 +132,7 @@ export class MultipleNotesOutlineView extends ItemView {
 
 	isDataviewEnabled = false;
 
-	constructor(
-		leaf: WorkspaceLeaf,
-		plugin: MultipleNotesOutlinePlugin,
-		settings: MultipleNotesOutlineSettings,
-	) {
+	constructor(leaf: WorkspaceLeaf, plugin: MultipleNotesOutlinePlugin, settings: MultipleNotesOutlineSettings) {
 		super(leaf);
 		this.plugin = plugin;
 		this.settings = settings;
@@ -185,6 +178,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	}
 
 	private async initView() {
+		console.log("ブランチテスト。develop＠1F");
 		await this.bootDelay();
 
 		checkRelatedFiles(this.app, this.settings);
@@ -201,8 +195,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		if (this.activeFile) {
 			if (
 				this.settings.openRecentAtStartup.file &&
-				this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof
-					TFile
+				this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof TFile
 			) {
 				this.targetFiles.main[0] = this.app.vault.getAbstractFileByPath(
 					this.settings.recent.file?.[0],
@@ -214,10 +207,7 @@ export class MultipleNotesOutlineView extends ItemView {
 				this.targetFiles.main[0] = this.activeFile;
 			}
 		} else {
-			if (
-				this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof
-				TFile
-			) {
+			if (this.app.vault.getAbstractFileByPath(this.settings.recent.file?.[0]) instanceof TFile) {
 				this.targetFiles.main[0] = this.app.vault.getAbstractFileByPath(
 					this.settings.recent.file?.[0],
 				) as TFile;
@@ -314,20 +304,12 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.registerEvent(
 			this.app.vault.on("rename", (file, oldPath) => {
 				if (file instanceof TFile) {
-					const changedRelatedFiles = handleRenameRelatedFiles(
-						file,
-						oldPath,
-						this.settings,
-					);
+					const changedRelatedFiles = handleRenameRelatedFiles(file, oldPath, this.settings);
 					if (changedRelatedFiles) {
 						this.flagSaveSettings = true;
 					}
 
-					const changedFavAndRecent = handleRenameFavAndRecentFiles(
-						file,
-						oldPath,
-						this.settings,
-					);
+					const changedFavAndRecent = handleRenameFavAndRecentFiles(file, oldPath, this.settings);
 					if (changedFavAndRecent) {
 						this.flagSaveSettings = true;
 					}
@@ -457,7 +439,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		}
 
 		if (this.flagRegetTarget) {
-			this.refreshView(this.flagRegetTarget, this.flagRegetTarget);
+			await this.refreshView(this.flagRegetTarget, this.flagRegetTarget);
 		}
 		this.changedFiles = [];
 		this.flagRegetTarget = false;
@@ -465,10 +447,7 @@ export class MultipleNotesOutlineView extends ItemView {
 		this.flagSaveSettings = false;
 		const endTime = performance.now();
 		if (this.settings.showDebugInfo) {
-			console.log(
-				"Multiple Notes Outline: time required to auto refresh, file view: ",
-				endTime - startTime,
-			);
+			console.log("Multiple Notes Outline: time required to auto refresh, file view: ", endTime - startTime);
 		}
 	}
 
@@ -499,8 +478,10 @@ export class MultipleNotesOutlineView extends ItemView {
 		if (this.targetFiles.main[0] && flagGetTarget) {
 			this.fileStatus.main = initFileStatus(this.targetFiles.main);
 			this.fileOrder.main = [...Array(this.targetFiles.main.length)].map((_, i) => i);
-			[this.fileStatus.main, this.fileInfo.main, this.outlineData.main] =
-				await this.getOutlines(this.targetFiles.main, this.fileStatus.main);
+			[this.fileStatus.main, this.fileInfo.main, this.outlineData.main] = await this.getOutlines(
+				this.targetFiles.main,
+				this.fileStatus.main,
+			);
 
 			// 現ファイル情報をもとにアウトゴーイングリンク/バックリンク先のファイルを取得
 			this.targetFiles.outgoing = getOutgoingLinkFiles(
@@ -517,24 +498,14 @@ export class MultipleNotesOutlineView extends ItemView {
 			this.fileOrder.backlink = [...Array(this.targetFiles.backlink.length)].map((_, i) => i);
 
 			//重複チェック
-			this.checkDuplicated(
-				this.targetFiles.outgoing,
-				this.targetFiles.main,
-				"main",
-				this.fileStatus.outgoing,
-			);
+			this.checkDuplicated(this.targetFiles.outgoing, this.targetFiles.main, "main", this.fileStatus.outgoing);
 			this.checkDuplicated(
 				this.targetFiles.outgoing,
 				this.targetFiles.outgoing,
 				"self",
 				this.fileStatus.outgoing,
 			);
-			this.checkDuplicated(
-				this.targetFiles.backlink,
-				this.targetFiles.main,
-				"main",
-				this.fileStatus.backlink,
-			);
+			this.checkDuplicated(this.targetFiles.backlink, this.targetFiles.main, "main", this.fileStatus.backlink);
 			this.checkDuplicated(
 				this.targetFiles.backlink,
 				this.targetFiles.outgoing,
@@ -552,13 +523,16 @@ export class MultipleNotesOutlineView extends ItemView {
 		// ファイル数がprocessLimitを超過していないときのみ読み込む
 		if (
 			flagGetOutline &&
-			this.targetFiles.outgoing.length + this.targetFiles.backlink.length <=
-				this.settings.processLimit
+			this.targetFiles.outgoing.length + this.targetFiles.backlink.length <= this.settings.processLimit
 		) {
-			[this.fileStatus.outgoing, this.fileInfo.outgoing, this.outlineData.outgoing] =
-				await this.getOutlines(this.targetFiles.outgoing, this.fileStatus.outgoing);
-			[this.fileStatus.backlink, this.fileInfo.backlink, this.outlineData.backlink] =
-				await this.getOutlines(this.targetFiles.backlink, this.fileStatus.backlink);
+			[this.fileStatus.outgoing, this.fileInfo.outgoing, this.outlineData.outgoing] = await this.getOutlines(
+				this.targetFiles.outgoing,
+				this.fileStatus.outgoing,
+			);
+			[this.fileStatus.backlink, this.fileInfo.backlink, this.outlineData.backlink] = await this.getOutlines(
+				this.targetFiles.backlink,
+				this.fileStatus.backlink,
+			);
 			sortFileOrder(
 				this.fileOrder.backlink,
 				this.targetFiles.backlink,
@@ -599,10 +573,7 @@ export class MultipleNotesOutlineView extends ItemView {
 	}
 
 	//ファイル情報、アウトライン情報を作成・取得
-	async getOutlines(
-		files: TFile[],
-		status: FileStatus[],
-	): Promise<[FileStatus[], FileInfo[], OutlineData[][]]> {
+	async getOutlines(files: TFile[], status: FileStatus[]): Promise<[FileStatus[], FileInfo[], OutlineData[][]]> {
 		const fileInfo: FileInfo[] = [];
 		const outlineData: OutlineData[][] = [];
 		for (let i = 0; i < files.length; i++) {
@@ -645,29 +616,23 @@ export class MultipleNotesOutlineView extends ItemView {
 	private drawOutline(previousY: number): void {
 		// include only modeか  filter関連コメントアウト
 		// this.includeMode = (this.settings.includeOnly != 'none') && (Boolean(this.settings.wordsToInclude.length) || (this.settings.includeBeginning));
-
+		const startTime = performance.now();
 		// 表示オンになっている見出しレベルの最高値
-		this.maxLevel = this.settings.headingLevel.indexOf(true);
+		//this.maxLevel = this.settings.headingLevel.indexOf(true);
 
 		const containerEl: HTMLElement = createDiv("nav-files-container node-insert-event");
 		const rootEl: HTMLElement = containerEl.createDiv("tree-item nav-folder mod-root");
-		const rootChildrenEl: HTMLElement = rootEl.createDiv(
-			"tree-item-children nav-folder-children",
-		);
+		const rootChildrenEl: HTMLElement = rootEl.createDiv("tree-item-children nav-folder-children");
 
 		// id を付加（スクロール位置の把握用）
 		containerEl.id = "MNOfileview-listcontainer";
 
 		// Always on Top
-		const categoryAOTEl: HTMLElement = rootChildrenEl.createDiv(
-			"tree-item nav-folder mod-root",
-		);
+		const categoryAOTEl: HTMLElement = rootChildrenEl.createDiv("tree-item nav-folder mod-root");
 
 		// main file
 		if (this.settings.showFiles.main) {
-			const categoryMainEl: HTMLElement = rootChildrenEl.createDiv(
-				"tree-item nav-folder mod-root",
-			);
+			const categoryMainEl: HTMLElement = rootChildrenEl.createDiv("tree-item nav-folder mod-root");
 			constructNoteDOM.call(
 				this,
 				this.targetFiles.main,
@@ -695,23 +660,26 @@ export class MultipleNotesOutlineView extends ItemView {
 
 		// backlink files
 		if (this.settings.showFiles.backlink) {
-			this.constructCategoryDOM(
-				"backlink",
-				"links-coming-in",
-				"Backlink Files",
-				rootChildrenEl,
-				categoryAOTEl,
-			);
+			this.constructCategoryDOM("backlink", "links-coming-in", "Backlink Files", rootChildrenEl, categoryAOTEl);
 		}
+
+		const midTime1 = performance.now();
 
 		// アウトライン部分の描画実行
 		this.contentEl.appendChild(containerEl);
+		const midTime2 = performance.now();
 
 		// スクロール位置を復元
+		console.log("スクロール位置復元suruka？", this.hasMainChanged, previousY);
 		if (this.hasMainChanged == false && previousY != 0) {
 			containerEl.scrollTop = previousY;
 		}
 		this.hasMainChanged = false;
+		const endTime = performance.now();
+		console.log("DOM構築", midTime1 - startTime);
+		console.log("appendチャイルド", midTime2 - midTime1);
+		console.log("スクロール", endTime - midTime2);
+		console.log("全体", endTime - startTime);
 	}
 
 	// categoryのDOMを作成
@@ -748,9 +716,7 @@ export class MultipleNotesOutlineView extends ItemView {
 			}
 		});
 
-		const categoryChildrenEl: HTMLElement = categoryEl.createDiv(
-			"tree-item-children nav-folder-children",
-		);
+		const categoryChildrenEl: HTMLElement = categoryEl.createDiv("tree-item-children nav-folder-children");
 
 		// 折りたたまれていれば子要素を非表示にする
 		if (!this.collapseCategory[category]) {

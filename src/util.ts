@@ -306,6 +306,9 @@ export function checkRelatedFiles(app: App, settings: MultipleNotesOutlineSettin
 
 // subpathを含むリンクのリンク先のpositionを取得
 export function getSubpathPosition(app: App, file: TFile, subpath: string): Pos | null {
+	if (!subpath) {
+		return null;
+	}
 	const cache = app.metadataCache.getFileCache(file);
 	if (!cache) {
 		return null;
