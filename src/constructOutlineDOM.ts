@@ -253,7 +253,7 @@ export function constructOutlineDOM(
 			// 	}
 			// }
 
-			//// 要素種別ごとの処理
+			//// 要素種別ごとの 処理
 
 			// headings
 			if (element == "heading") {
@@ -267,7 +267,7 @@ export function constructOutlineDOM(
 
 			// links
 			if (element == "link") {
-				if (!checkLinksBetweenRelatedFiles(linkTarget, category, this.settings, this.targetFiles) == false) {
+				if (checkLinksBetweenRelatedFiles(linkTarget, category, this.settings, this.targetFiles) == false) {
 					continue;
 				}
 				if (this.settings.hideMinor2hopLink && category == "outgoing") {
@@ -292,7 +292,6 @@ export function constructOutlineDOM(
 					continue;
 				}
 			}
-
 			//アウトライン要素部分作成
 			const outlineEl: HTMLElement = parentEl.createDiv("tree-item nav-file");
 			//中身を設定
@@ -802,7 +801,12 @@ export function constructOutlineDOM(
 }
 
 // エレメントの位置を開く
-async function openElementPosition(file: TFile, position: null | Pos, method: undefined | "tab" | "split", app: App) {
+async function openElementPosition(
+	file: TFile | null,
+	position: null | Pos,
+	method: undefined | "tab" | "split",
+	app: App,
+) {
 	await app.workspace.getLeaf(method).openFile(file);
 	if (position) {
 		scrollToElement(position.start?.line, 0, app);
@@ -846,11 +850,14 @@ function setPopoutAlwaysOnTop() {
 
 // targetFiles間のリンクを表示すべきか判定
 function checkLinksBetweenRelatedFiles(
-	linkTarget: TFile,
+	linkTarget: TFile | null,
 	category: string,
 	settings: MultipleNotesOutlineSettings,
 	targetFiles: { [category: string]: TFile[] },
 ): boolean {
+	if (!linkTarget) {
+		return true;
+	}
 	if (settings.hideLinksBetweenRelatedFiles == "mainOnly") {
 		if (category == "main") {
 			return false;
